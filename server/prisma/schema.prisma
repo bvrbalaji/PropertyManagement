@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  FLAT_OWNER
+  TENANT
+  MAINTENANCE_STAFF
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum VerificationType {
+  EMAIL
+  PHONE
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  phone         String?     @unique
+  password      String
+  fullName      String
+  role          UserRole
+  status        UserStatus  @default(ACTIVE)
+  emailVerified Boolean     @default(false)
+  phoneVerified Boolean     @default(false)
+  mfaEnabled    Boolean     @default(false)
+  mfaSecret     String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Relations
+  properties       Property[]
+  ownedProperties    Property[]        @relation("PropertyOwner")
+  tenantAssignments  TenantAssignment[]
+  maintenanceRequests MaintenanceRequest[]
+  sessions          Session[]
+  verifications     Verification[]
+  
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([status])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String?  @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Verification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      VerificationType
+  code      String
+  expiresAt DateTime
+  verified  Boolean         @default(false)
+  createdAt DateTime         @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  adminId     String
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  admin User @relation(fields: [adminId], references: [id])
+  owner User? @relation("PropertyOwner", fields: [ownerId], references: [id])
+  
+  apartments        Apartment[]
+  maintenanceRequests MaintenanceRequest[]
+  
+  @@index([adminId])
+  @@index([ownerId])
+}
+
+model Apartment {
+  id         String   @id @default(cuid())
+  propertyId String
+  unitNumber String
+  floor      Int?
+  bedrooms   Int?
+  bathrooms  Int?
+  area       Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantAssignments TenantAssignment[]
+  maintenanceRequests MaintenanceRequest[]
+  
+  @@index([propertyId])
+  @@unique([propertyId, unitNumber])
+}
+
+model TenantAssignment {
+  id          String   @id @default(cuid())
+  apartmentId String
+  tenantId    String
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  apartment Apartment @relation(fields: [apartmentId], references: [id])
+  tenant    User      @relation(fields: [tenantId], references: [id])
+  
+  @@index([apartmentId])
+  @@index([tenantId])
+  @@index([isActive])
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(cuid())
+  apartmentId String
+  propertyId  String
+  tenantId    String?
+  staffId     String?
+  title       String
+  description String
+  priority    String   @default("MEDIUM")
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolvedAt  DateTime?
+  
+  apartment Apartment @relation(fields: [apartmentId], references: [id])
+  property  Property  @relation(fields: [propertyId], references: [id])
+  staff     User?     @relation(fields: [staffId], references: [id])
+  
+  @@index([apartmentId])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([staffId])
+  @@index([status])
+  @@index([priority])
+}
