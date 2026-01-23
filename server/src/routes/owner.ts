@@ -1,12 +1,12 @@
 import express from 'express';
 import ownerController from '../controllers/ownerController';
 import adminOwnerController from '../controllers/adminOwnerController';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+router.use(authenticate);
 
 // ===== OWNER PROFILE MANAGEMENT =====
 // GET /api/owner/profile - Get owner profile

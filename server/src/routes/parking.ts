@@ -1,11 +1,11 @@
 import express from 'express';
 import parkingController from '../controllers/parkingController';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+router.use(authenticate);
 
 // Parking slot management
 router.post('/:propertyId/slots', parkingController.createParkingSlots);

@@ -1,11 +1,11 @@
 import express from 'express';
 import offboardingController from '../controllers/offboardingController';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+router.use(authenticate);
 
 // Offboarding management
 router.post('/', offboardingController.createOffboardingRequest);

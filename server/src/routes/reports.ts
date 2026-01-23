@@ -1,6 +1,6 @@
 import express from 'express';
 import reportsController from '../controllers/reportsController';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -8,7 +8,7 @@ const router = express.Router();
  * All routes require authentication
  * TODO: Add role-based access control for admin-only routes
  */
-router.use(authMiddleware);
+router.use(authenticate);
 
 /**
  * GET /api/reports/collection-summary

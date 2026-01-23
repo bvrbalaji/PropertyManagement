@@ -1,11 +1,11 @@
 import express from 'express';
 import onboardingController from '../controllers/onboardingController';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+router.use(authenticate);
 
 // Onboarding management
 router.post('/', onboardingController.createOnboarding);
