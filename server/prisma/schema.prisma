@@ -237,9 +237,9 @@ model Property {
   financialData     OwnerPropertyFinancial[]
   
   // Financial relations
-  rentInvoices      RentInvoice[]
-  maintenanceInvoices MaintenanceInvoice[]
-  payments          Payment[]
+  rentInvoices      RentInvoice[] @relation("RentInvoices")
+  maintenanceInvoices MaintenanceInvoice[] @relation("MaintenanceInvoices")
+  payments          Payment[] @relation("Payments")
   rentConfigs       RentConfig[]
   maintenanceFeeConfigs MaintenanceFeeConfig[]
   
