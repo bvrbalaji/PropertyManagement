@@ -300,6 +300,222 @@ export class OwnerService {
   }
 
   /**
+   * Get property detail for owner
+   */
+  async getPropertyDetail(userId: string, propertyId: string) {
+    try {
+      const ownerProfile = await prisma.ownerProfile.findUnique({
+        where: { userId },
+      });
+
+      if (!ownerProfile) {
+        return {
+          success: false,
+          error: 'Owner profile not found',
+        };
+      }
+
+      const property = await prisma.property.findUnique({
+        where: { id: propertyId, ownerId: userId },
+        include: {
+          apartments: true,
+          _count: {
+            select: {
+              apartments: true,
+              tenantAssignments: true,
+            },
+          },
+        },
+      });
+
+      if (!property) {
+        return {
+          success: false,
+          error: 'Property not found or not owned by user',
+        };
+      }
+
+      return {
+        success: true,
+        data: property,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Update property detail for owner
+   */
+  async updatePropertyDetail(userId: string, propertyId: string, data: any) {
+    try {
+      const property = await prisma.property.findUnique({
+        where: { id: propertyId },
+      });
+
+      if (!property || property.ownerId !== userId) {
+        return {
+          success: false,
+          error: 'Property not found or not owned by user',
+        };
+      }
+
+      const updated = await prisma.property.update({
+        where: { id: propertyId },
+        data: {
+          name: data.name || property.name,
+          address: data.address || property.address,
+        },
+      });
+
+      return {
+        success: true,
+        data: updated,
+        message: 'Property updated successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get property units
+   */
+  async getPropertyUnits(userId: string, propertyId: string) {
+    try {
+      const property = await prisma.property.findUnique({
+        where: { id: propertyId },
+      });
+
+      if (!property || property.ownerId !== userId) {
+        return {
+          success: false,
+          error: 'Property not found or not owned by user',
+        };
+      }
+
+      const apartments = await prisma.apartment.findMany({
+        where: { propertyId },
+      });
+
+      return {
+        success: true,
+        data: apartments,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get property tenants
+   */
+  async getPropertyTenants(userId: string, propertyId: string) {
+    try {
+      const property = await prisma.property.findUnique({
+        where: { id: propertyId },
+      });
+
+      if (!property || property.ownerId !== userId) {
+        return {
+          success: false,
+          error: 'Property not found or not owned by user',
+        };
+      }
+
+      const tenants = await prisma.tenantAssignment.findMany({
+        where: {
+          apartment: { propertyId },
+          isActive: true,
+        },
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        data: tenants.map((t) => ({
+          ...t.tenant,
+          startDate: t.startDate,
+          endDate: t.endDate,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get property financials
+   */
+  async getPropertyFinancials(userId: string, propertyId: string) {
+    try {
+      const property = await prisma.property.findUnique({
+        where: { id: propertyId },
+      });
+
+      if (!property || property.ownerId !== userId) {
+        return {
+          success: false,
+          error: 'Property not found or not owned by user',
+        };
+      }
+
+      const [rentInvoices, maintenanceInvoices, payments] = await Promise.all([
+        prisma.rentInvoice.findMany({
+          where: { propertyId },
+        }),
+        prisma.maintenanceInvoice.findMany({
+          where: { propertyId },
+        }),
+        prisma.payment.findMany({
+          where: { propertyId },
+        }),
+      ]);
+
+      const totalRent = rentInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+      const totalMaintenance = maintenanceInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+      const totalPayments = payments.reduce((sum, pmt) => sum + pmt.amount, 0);
+      const pending = totalRent + totalMaintenance - totalPayments;
+
+      return {
+        success: true,
+        data: {
+          totalRent,
+          totalMaintenance,
+          totalPayments,
+          pending,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
    * Update communication preferences
    */
   async updateCommunicationPreference(userId: string, preference: CommunicationPreference) {
@@ -452,4 +668,5 @@ function calculateProfileCompleteness(data: any): number {
   return Math.round((filledFields / fields.length) * 100);
 }
 
+export { OwnerService };
 export default new OwnerService();

@@ -1,4 +1,372 @@
-# Quick Reference Guide - Tenant Onboarding & Offboarding
+# Quick Reference Guide - New Features
+
+## Admin Property Management
+
+### Access
+- **URL**: `/dashboard/admin/properties`
+- **API**: `/api/admin/properties`
+- **Auth**: Admin only
+
+### Actions Available
+```
+GET    /api/admin/properties              List all properties
+GET    /api/admin/properties/:id          Get property details
+POST   /api/admin/properties              Create new property
+PUT    /api/admin/properties/:id          Update property
+DELETE /api/admin/properties/:id          Delete property
+GET    /api/admin/properties/stats        Get statistics
+```
+
+### Frontend Pages
+- `/dashboard/admin/properties` - Property list
+- `/dashboard/admin/properties/[id]` - Property detail view
+- `/dashboard/admin/properties/[id]/edit` - Edit property
+- `/dashboard/admin/properties/create` - Create new property
+
+### Features
+- Search by name/address
+- Pagination (10 per page)
+- View apartments & tenants count
+- Create, edit, delete properties
+- View property statistics
+
+---
+
+## Admin User Management
+
+### Access
+- **URL**: `/dashboard/admin/users`
+- **API**: `/api/admin/users`
+- **Auth**: Admin only
+
+### Actions Available
+```
+GET    /api/admin/users                   List all users
+GET    /api/admin/users/:id               Get user details
+POST   /api/admin/users                   Create new user
+PUT    /api/admin/users/:id               Update user
+DELETE /api/admin/users/:id               Delete user (soft)
+PATCH  /api/admin/users/:id/role          Update user role
+GET    /api/admin/users/stats             Get statistics
+```
+
+### Frontend Pages
+- `/dashboard/admin/users` - User list
+- `/dashboard/admin/users/[id]` - User detail view
+- `/dashboard/admin/users/[id]/edit` - Edit user
+- `/dashboard/admin/users/create` - Create new user
+
+### Features
+- Search by name/email/phone
+- Filter by role (4 types)
+- Filter by status (3 states)
+- Pagination (10 per page)
+- View verification status
+- Edit user roles
+- Soft delete (mark inactive)
+
+### Roles
+- ADMIN
+- FLAT_OWNER
+- TENANT
+- MAINTENANCE_STAFF
+
+### Statuses
+- ACTIVE
+- INACTIVE
+- SUSPENDED
+
+---
+
+## Owner Property Details
+
+### Access
+- **URL**: `/dashboard/flat-owner/properties/[id]`
+- **API**: `/api/owner/properties/[id]`
+- **Auth**: Owner only (verified ownership)
+
+### Actions Available
+```
+GET    /api/owner/properties/:id          Get property detail
+PUT    /api/owner/properties/:id          Update property
+GET    /api/owner/properties/:id/units    Get units
+GET    /api/owner/properties/:id/tenants  Get tenants
+GET    /api/owner/properties/:id/financials Get financials
+```
+
+### Tabs Available
+1. **Overview** - Property info & quick stats
+2. **Units** - List all apartments
+3. **Tenants** - List active tenants
+4. **Financials** - Financial summary
+
+### Features
+- View property overview
+- View units/apartments
+- View active tenants with lease dates
+- View rent, maintenance, payments
+- Calculate occupancy rate
+- Edit property details
+
+---
+
+## API Client Usage
+
+### Admin Property API
+```typescript
+import adminPropertyApi from '@/lib/adminPropertyApi';
+
+// Get all properties
+const result = await adminPropertyApi.getAll(page, limit, search, ownerId);
+
+// Get single property
+const result = await adminPropertyApi.getById(propertyId);
+
+// Create property
+const result = await adminPropertyApi.create({
+  name: "Royal Apartments",
+  address: "123 Main St",
+  ownerId: "owner-id" // optional
+});
+
+// Update property
+const result = await adminPropertyApi.update(propertyId, {
+  name: "New Name",
+  address: "New Address"
+});
+
+// Delete property
+const result = await adminPropertyApi.delete(propertyId);
+
+// Get statistics
+const result = await adminPropertyApi.getStats();
+```
+
+### Admin User API
+```typescript
+import adminUserApi from '@/lib/adminUserApi';
+
+// Get all users
+const result = await adminUserApi.getAll(page, limit, search, role, status);
+
+// Get single user
+const result = await adminUserApi.getById(userId);
+
+// Create user
+const result = await adminUserApi.create({
+  fullName: "John Doe",
+  email: "john@example.com",
+  phone: "1234567890",
+  password: "secure123",
+  role: "TENANT"
+});
+
+// Update user
+const result = await adminUserApi.update(userId, {
+  fullName: "Jane Doe",
+  email: "jane@example.com"
+});
+
+// Delete user
+const result = await adminUserApi.delete(userId);
+
+// Update role
+const result = await adminUserApi.updateRole(userId, "ADMIN");
+
+// Get statistics
+const result = await adminUserApi.getStats();
+```
+
+---
+
+## Response Format
+
+All APIs return standardized responses:
+
+### Success Response
+```json
+{
+  "success": true,
+  "data": { /* entity data */ },
+  "message": "Operation successful"
+}
+```
+
+### List Response
+```json
+{
+  "success": true,
+  "data": {
+    "properties": [ /* array of entities */ ],
+    "pagination": {
+      "total": 100,
+      "page": 1,
+      "limit": 10,
+      "pages": 10
+    }
+  }
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "errors": [ /* validation errors */ ]
+}
+```
+
+---
+
+## Status Codes
+
+| Code | Meaning |
+|------|---------|
+| 200 | OK - Request successful |
+| 201 | Created - Resource created successfully |
+| 400 | Bad Request - Validation error |
+| 401 | Unauthorized - Not authenticated |
+| 403 | Forbidden - Insufficient permissions |
+| 404 | Not Found - Resource doesn't exist |
+| 500 | Internal Error - Server error |
+
+---
+
+## Common Patterns
+
+### Handling API Calls
+```typescript
+try {
+  setLoading(true);
+  const result = await api.getSomething();
+  if (result.success) {
+    setData(result.data);
+  } else {
+    setError(result.error);
+  }
+} catch (error) {
+  setError('An error occurred');
+} finally {
+  setLoading(false);
+}
+```
+
+### Form Submission
+```typescript
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const result = await api.create(formData);
+    if (result.success) {
+      router.push('/path/to/view');
+    } else {
+      setError(result.error);
+    }
+  } catch (error) {
+    setError('Submit failed');
+  }
+};
+```
+
+### Pagination
+```typescript
+const [page, setPage] = useState(1);
+
+const handleNext = () => {
+  setPage(Math.min(page + 1, totalPages));
+};
+
+const handlePrev = () => {
+  setPage(Math.max(page - 1, 1));
+};
+```
+
+---
+
+## Troubleshooting
+
+### 401 Unauthorized
+- Check if user is logged in
+- Verify auth token is valid
+- Check cookie settings
+
+### 403 Forbidden
+- Verify user has correct role
+- Check authorization middleware
+- Verify resource ownership
+
+### 404 Not Found
+- Check if resource exists
+- Verify ID is correct
+- Check database query
+
+### Validation Errors
+- Check field requirements
+- Verify data format
+- Check error response
+
+---
+
+## File Locations
+
+### Controllers
+- `server/src/controllers/adminPropertyController.ts`
+- `server/src/controllers/adminUserController.ts`
+- `server/src/controllers/ownerController.ts`
+
+### Routes
+- `server/src/routes/adminProperties.ts`
+- `server/src/routes/adminUsers.ts`
+- `server/src/routes/owner.ts`
+
+### Services
+- `server/src/services/ownerService.ts`
+
+### API Clients
+- `client/src/lib/adminPropertyApi.ts`
+- `client/src/lib/adminUserApi.ts`
+
+### Pages
+- `client/src/app/dashboard/admin/properties/**`
+- `client/src/app/dashboard/admin/users/**`
+- `client/src/app/dashboard/flat-owner/properties/[id]/page.tsx`
+
+---
+
+## Performance Tips
+
+1. **Use pagination** for large datasets
+2. **Implement search filters** to reduce data
+3. **Cache property stats** if needed
+4. **Use debouncing** for search inputs
+5. **Load data on demand** (lazy loading)
+
+---
+
+## Security Checklist
+
+- ✅ All endpoints require authentication
+- ✅ Admin routes require admin role
+- ✅ Owner routes verify ownership
+- ✅ Passwords are hashed
+- ✅ Input validation on all endpoints
+- ✅ SQL injection prevention (Prisma)
+- ✅ CORS configured
+- ✅ Error messages don't leak info
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | 2026-01-23 | Initial implementation |
+
+---
+
+**Last Updated**: January 23, 2026  
+**Status**: Complete & Ready ✅ Guide - Tenant Onboarding & Offboarding
 
 ## 🚀 Getting Started
 

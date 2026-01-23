@@ -22,6 +22,21 @@ router.put('/profile', ownerController.updateOwnerProfile);
 // GET /api/owner/properties - Get all properties for owner (Dashboard)
 router.get('/properties', ownerController.getOwnerProperties);
 
+// GET /api/owner/properties/:propertyId - Get property detail
+router.get('/properties/:propertyId', ownerController.getPropertyDetail);
+
+// PUT /api/owner/properties/:propertyId - Update property detail
+router.put('/properties/:propertyId', ownerController.updatePropertyDetail);
+
+// GET /api/owner/properties/:propertyId/units - Get property units
+router.get('/properties/:propertyId/units', ownerController.getPropertyUnits);
+
+// GET /api/owner/properties/:propertyId/tenants - Get property tenants
+router.get('/properties/:propertyId/tenants', ownerController.getPropertyTenants);
+
+// GET /api/owner/properties/:propertyId/financials - Get property financials
+router.get('/properties/:propertyId/financials', ownerController.getPropertyFinancials);
+
 // POST /api/owner/properties - Add property to owner
 router.post('/properties', ownerController.addPropertyToOwner);
 

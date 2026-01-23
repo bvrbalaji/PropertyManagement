@@ -62,13 +62,13 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
-              href="/dashboard/admin"
+              href="/dashboard/admin/users"
               className="py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center font-medium transition-colors"
             >
               👥 User Management
             </Link>
             <Link
-              href="/dashboard/admin"
+              href="/dashboard/admin/properties"
               className="py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 text-center font-medium transition-colors"
             >
               🏢 Properties

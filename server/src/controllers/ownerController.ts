@@ -352,6 +352,102 @@ class OwnerController {
       });
     }
   }
+
+  // Property Details
+  async getPropertyDetail(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { propertyId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const result = await ownerService.getPropertyDetail(userId, propertyId);
+      return res.status(result.success ? 200 : 404).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
+
+  async updatePropertyDetail(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { propertyId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const result = await ownerService.updatePropertyDetail(userId, propertyId, req.body);
+      return res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
+
+  async getPropertyUnits(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { propertyId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const result = await ownerService.getPropertyUnits(userId, propertyId);
+      return res.status(result.success ? 200 : 404).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
+
+  async getPropertyTenants(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { propertyId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const result = await ownerService.getPropertyTenants(userId, propertyId);
+      return res.status(result.success ? 200 : 404).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
+
+  async getPropertyFinancials(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { propertyId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const result = await ownerService.getPropertyFinancials(userId, propertyId);
+      return res.status(result.success ? 200 : 404).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
 }
 
 export default new OwnerController();

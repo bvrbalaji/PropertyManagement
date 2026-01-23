@@ -15,6 +15,8 @@ import ownerRoutes from './routes/owner';
 import financesRoutes from './routes/finances';
 import notificationsRoutes from './routes/notifications';
 import reportsRoutes from './routes/reports';
+import adminPropertiesRoutes from './routes/adminProperties';
+import adminUsersRoutes from './routes/adminUsers';
 
 dotenv.config();
 
@@ -49,6 +51,8 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/finances', financesRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/admin/properties', adminPropertiesRoutes);
+app.use('/api/admin/users', adminUsersRoutes);
 
 // Error handling
 app.use(errorHandler);
