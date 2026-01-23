@@ -44,6 +44,8 @@ export default function PaymentForm() {
 
     try {
       setLoading(true);
+      // FEATURE: Invoice Validation - Will be enabled later
+      // TODO: Add invoice status validation (check if already paid)
       const response = await fetch(`/api/finances/invoices/${formData.invoiceId}`);
       const data = await response.json();
       
@@ -54,6 +56,12 @@ export default function PaymentForm() {
           amount: data.data.amount,
           tenantEmail: data.data.tenantEmail || '',
         }));
+        
+        // FEATURE: Payment History Check - Will be enabled later
+        // TODO: Check if invoice already has successful payments
+        // const previousPayments = await getPaymentHistory(formData.invoiceId);
+        // if (previousPayments.length > 0) warn user
+        
         toast.success('Invoice details loaded');
       } else {
         toast.error('Invoice not found');
@@ -77,6 +85,10 @@ export default function PaymentForm() {
 
     try {
       setLoading(true);
+      
+      // FEATURE: Payment Gateway Integration - Will be enabled later
+      // This will redirect to payment gateway (Razorpay, Paytm, etc.)
+      // TODO: Enable payment gateway integration after testing
       const response = await fetch('/api/finances/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,15 +99,27 @@ export default function PaymentForm() {
 
       if (response.ok) {
         toast.success('Payment initiated successfully');
-        // In a real implementation, redirect to payment gateway
-        if (data.paymentLink) {
-          window.location.href = data.paymentLink;
-        }
+        
+        // FEATURE: Redirect to Payment Gateway - Will be enabled later
+        // TODO: Uncomment when payment gateway is configured
+        // if (data.paymentLink) {
+        //   window.location.href = data.paymentLink;
+        // }
+        
+        // FEATURE: Send Payment Confirmation Email - Will be enabled later
+        // TODO: Trigger email notification when payment gateway integration is complete
+        // await sendPaymentConfirmationEmail(formData.tenantEmail, data.paymentId);
+        
+        // FEATURE: Update Invoice Status - Will be enabled later
+        // TODO: Mark invoice as paid in system after successful payment
+        // await updateInvoiceStatus(formData.invoiceId, 'PAID');
       } else {
         toast.error(data.message || 'Failed to initiate payment');
       }
     } catch (error) {
       console.error('Error initiating payment:', error);
+      // FEATURE: Log Payment Error to System - Will be enabled later
+      // TODO: Send error logs to monitoring system
       toast.error('Failed to initiate payment');
     } finally {
       setLoading(false);
@@ -303,8 +327,14 @@ export default function PaymentForm() {
               <h4 className="font-semibold text-blue-900 mb-2">Payment Information</h4>
               <ul className="text-xs text-blue-800 space-y-1">
                 <li>• Payments are processed securely</li>
+                {/* FEATURE: Email Notifications - Will be enabled later */}
+                {/* TODO: Enable email confirmations to tenant and owner */}
                 <li>• Confirmation email sent to tenant</li>
+                {/* FEATURE: Transaction Tracking - Will be enabled later */}
+                {/* TODO: Store and track transaction IDs in database */}
                 <li>• Transaction ID saved in system</li>
+                {/* FEATURE: Refund Processing - Will be enabled later */}
+                {/* TODO: Enable refund portal with time-based restrictions */}
                 <li>• Refunds available within 30 days</li>
               </ul>
             </div>
