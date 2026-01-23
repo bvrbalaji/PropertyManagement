@@ -114,6 +114,13 @@ model User {
   transfersInitiated OwnershipTransfer[] @relation("TransferInitiatedBy")
   transfersReceived OwnershipTransfer[] @relation("TransferredTo")
   
+  // Financial relations (for tenants)
+  rentInvoices      RentInvoice[]
+  maintenanceInvoices MaintenanceInvoice[]
+  payments          Payment[]
+  paymentReminders  PaymentReminder[]
+  lateFees          LateFee[]
+  
   @@index([email])
   @@index([phone])
   @@index([role])
@@ -174,6 +181,13 @@ model Property {
   ownerProperties   OwnerProperty[]
   financialData     OwnerPropertyFinancial[]
   
+  // Financial relations
+  rentInvoices      RentInvoice[]
+  maintenanceInvoices MaintenanceInvoice[]
+  payments          Payment[]
+  rentConfigs       RentConfig[]
+  maintenanceFeeConfigs MaintenanceFeeConfig[]
+  
   @@index([adminId])
   @@index([ownerId])
 }
@@ -194,6 +208,13 @@ model Apartment {
   maintenanceRequests MaintenanceRequest[]
   onboardings       TenantOnboarding[]  @relation("ApartmentOnboarding")
   offboardings      TenantOffboarding[] @relation("ApartmentOffboarding")
+  
+  // Financial relations
+  rentInvoices      RentInvoice[]
+  maintenanceInvoices MaintenanceInvoice[]
+  payments          Payment[]
+  rentConfigs       RentConfig[]
+  maintenanceFeeConfigs MaintenanceFeeConfig[]
   
   @@index([propertyId])
   @@unique([propertyId, unitNumber])
@@ -635,4 +656,395 @@ model OwnerCommunication {
   @@index([ownerProfileId])
   @@index([sentAt])
   @@index([readAt])
+}
+
+// ==================== FINANCIAL MANAGEMENT ====================
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  UPI
+  NET_BANKING
+  CREDIT_CARD
+  DEBIT_CARD
+  WALLET
+  CASH
+  CHEQUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum ReminderType {
+  INVOICE_SENT
+  DUE_DATE_REMINDER
+  OVERDUE_1
+  OVERDUE_2
+  OVERDUE_3
+}
+
+model RentInvoice {
+  id                String    @id @default(cuid())
+  tenantId          String
+  propertyId        String
+  apartmentId       String
+  invoiceNumber     String    @unique
+  invoiceDate       DateTime  @default(now())
+  dueDate           DateTime
+  rentAmount        Float
+  lateFeeAmount     Float     @default(0)
+  totalAmount       Float
+  paidAmount        Float     @default(0)
+  balanceAmount     Float
+  status            InvoiceStatus @default(SENT)
+  description       String?
+  notes             String?
+  
+  // Payment tracking
+  firstPaymentDate  DateTime?
+  lastPaymentDate   DateTime?
+  
+  // Late fees
+  isOverdue         Boolean   @default(false)
+  overdueDate       DateTime?
+  daysOverdue       Int       @default(0)
+  
+  // Reminders sent
+  dueReminder       Boolean   @default(false)
+  overdueReminder   Boolean   @default(false)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  tenant            User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property          Property  @relation("RentInvoices", fields: [propertyId], references: [id], onDelete: Cascade)
+  apartment         Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+  reminders         PaymentReminder[]
+  lateFees          LateFee[]
+  receipts          PaymentReceipt[]
+  
+  @@unique([tenantId, propertyId, apartmentId, invoiceDate])
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([apartmentId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([isOverdue])
+  @@index([createdAt])
+}
+
+model MaintenanceInvoice {
+  id                String    @id @default(cuid())
+  tenantId          String
+  propertyId        String
+  apartmentId       String
+  invoiceNumber     String    @unique
+  invoiceDate       DateTime  @default(now())
+  dueDate           DateTime
+  maintenanceAmount Float
+  waterCharges      Float     @default(0)
+  securityCharges   Float     @default(0)
+  cleaningCharges   Float     @default(0)
+  otherCharges      Float     @default(0)
+  totalAmount       Float
+  paidAmount        Float     @default(0)
+  balanceAmount     Float
+  status            InvoiceStatus @default(SENT)
+  description       String?
+  notes             String?
+  
+  // Combined with rent
+  combinedWithRent  Boolean   @default(false)
+  rentInvoiceId     String?
+  
+  // Payment tracking
+  firstPaymentDate  DateTime?
+  lastPaymentDate   DateTime?
+  
+  // Late fees
+  isOverdue         Boolean   @default(false)
+  overdueDate       DateTime?
+  daysOverdue       Int       @default(0)
+  
+  // Reminders sent
+  dueReminder       Boolean   @default(false)
+  overdueReminder   Boolean   @default(false)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  tenant            User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property          Property  @relation("MaintenanceInvoices", fields: [propertyId], references: [id], onDelete: Cascade)
+  apartment         Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+  reminders         PaymentReminder[]
+  lateFees          LateFee[]
+  receipts          PaymentReceipt[]
+  
+  @@unique([tenantId, propertyId, apartmentId, invoiceDate])
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([apartmentId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([isOverdue])
+  @@index([createdAt])
+}
+
+model Payment {
+  id                String    @id @default(cuid())
+  tenantId          String
+  propertyId        String
+  apartmentId       String
+  
+  // Payment details
+  rentInvoiceId     String?
+  maintenanceInvoiceId String?
+  paymentAmount     Float
+  paymentDate       DateTime  @default(now())
+  paymentMethod     PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  
+  // Payment gateway
+  transactionId     String?   @unique
+  gatewayReference  String?
+  gatewayResponse   Json?
+  
+  // Payment gateway info
+  paymentGateway    String    // "razorpay" | "stripe"
+  
+  // Refund tracking
+  refundAmount      Float     @default(0)
+  refundDate        DateTime?
+  refundReason      String?
+  
+  notes             String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  tenant            User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property          Property  @relation("Payments", fields: [propertyId], references: [id], onDelete: Cascade)
+  apartment         Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  rentInvoice       RentInvoice? @relation(fields: [rentInvoiceId], references: [id], onDelete: SetNull)
+  maintenanceInvoice MaintenanceInvoice? @relation(fields: [maintenanceInvoiceId], references: [id], onDelete: SetNull)
+  receipt           PaymentReceipt?
+  
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([apartmentId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([paymentGateway])
+  @@index([rentInvoiceId])
+  @@index([maintenanceInvoiceId])
+}
+
+model PaymentReceipt {
+  id                String    @id @default(cuid())
+  paymentId         String    @unique
+  rentInvoiceId     String?
+  maintenanceInvoiceId String?
+  receiptNumber     String    @unique
+  receiptDate       DateTime  @default(now())
+  
+  // Receipt details
+  tenantName        String
+  tenantEmail       String
+  paymentAmount     Float
+  paymentMethod     String
+  transactionId     String?
+  
+  // Document
+  pdfUrl            String?
+  emailSentAt       DateTime?
+  emailStatus       String?   // "sent" | "failed" | "bounced"
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  payment           Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  rentInvoice       RentInvoice? @relation(fields: [rentInvoiceId], references: [id], onDelete: SetNull)
+  maintenanceInvoice MaintenanceInvoice? @relation(fields: [maintenanceInvoiceId], references: [id], onDelete: SetNull)
+  
+  @@index([paymentId])
+  @@index([rentInvoiceId])
+  @@index([maintenanceInvoiceId])
+  @@index([emailSentAt])
+  @@index([receiptDate])
+}
+
+model PaymentReminder {
+  id                String    @id @default(cuid())
+  tenantId          String
+  rentInvoiceId     String?
+  maintenanceInvoiceId String?
+  
+  reminderType      ReminderType
+  scheduledDate     DateTime
+  sentDate          DateTime?
+  
+  // Reminder content
+  subject           String
+  message           String
+  channel           String    // "email" | "sms" | "whatsapp"
+  
+  // Status
+  status            String    @default("pending") // "pending" | "sent" | "failed"
+  retryCount        Int       @default(0)
+  maxRetries        Int       @default(3)
+  
+  // Response tracking
+  openedAt          DateTime?
+  clickedAt         DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  tenant            User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rentInvoice       RentInvoice? @relation(fields: [rentInvoiceId], references: [id], onDelete: Cascade)
+  maintenanceInvoice MaintenanceInvoice? @relation(fields: [maintenanceInvoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([sentDate])
+}
+
+model LateFee {
+  id                String    @id @default(cuid())
+  tenantId          String
+  rentInvoiceId     String?
+  maintenanceInvoiceId String?
+  
+  // Late fee calculation
+  invoiceDate       DateTime
+  dueDate           DateTime
+  paymentDueDate    DateTime
+  
+  daysOverdue       Int
+  lateFeeAmount     Float
+  lateFeePercent    Float    // percentage of invoice amount
+  
+  // Fee rules
+  calculationMethod String    // "flat" | "percent_per_day" | "percent_per_month"
+  maxLateFee        Float?
+  
+  status            String    @default("active") // "active" | "waived" | "paid"
+  waivedAt          DateTime?
+  waivedBy          String?
+  waiverReason      String?
+  
+  paidAmount        Float     @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  tenant            User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rentInvoice       RentInvoice? @relation(fields: [rentInvoiceId], references: [id], onDelete: Cascade)
+  maintenanceInvoice MaintenanceInvoice? @relation(fields: [maintenanceInvoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MaintenanceFeeConfig {
+  id                String    @id @default(cuid())
+  propertyId        String
+  apartmentId       String?   // null = apply to all in property
+  
+  // Base amounts
+  maintenanceAmount Float
+  waterCharges      Float     @default(0)
+  securityCharges   Float     @default(0)
+  cleaningCharges   Float     @default(0)
+  otherCharges      Float     @default(0)
+  
+  // Configuration
+  feeType           String    @default("fixed") // "fixed" | "variable"
+  billingCycle      String    @default("monthly") // "monthly" | "quarterly" | "yearly"
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  
+  // Payment settings
+  dueDate           Int       // day of month (1-31)
+  gracePeriod       Int       @default(5) // days after due date
+  
+  // Escalation
+  annualIncrease    Float?    // percentage increase per year
+  lastIncreaseDate  DateTime?
+  nextIncreaseDate  DateTime?
+  
+  // Exemptions
+  isActive          Boolean   @default(true)
+  exemptVacant      Boolean   @default(true)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property          Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  apartment         Apartment? @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  
+  @@unique([propertyId, apartmentId, effectiveFrom])
+  @@index([propertyId])
+  @@index([apartmentId])
+  @@index([isActive])
+}
+
+model RentConfig {
+  id                String    @id @default(cuid())
+  propertyId        String
+  apartmentId       String?   // null = apply to all in property
+  
+  // Rent amount
+  rentAmount        Float
+  
+  // Configuration
+  billingCycle      String    @default("monthly") // "monthly" | "quarterly" | "yearly"
+  dueDate           Int       // day of month (1-31)
+  gracePeriod       Int       @default(5) // days after due date
+  
+  // Late fee rules
+  lateFeeType       String    @default("percent") // "flat" | "percent"
+  lateFeeValue      Float     // amount or percentage
+  lateFeeMaxPercent Float?    // max late fee as % of rent
+  calculateFrom     String    @default("due_date") // "due_date" | "rent_date"
+  
+  // Escalation
+  annualIncrease    Float?    // percentage increase per year
+  lastIncreaseDate  DateTime?
+  nextIncreaseDate  DateTime?
+  
+  // Payment settings
+  multiplePayments  Boolean   @default(true) // allow partial payments
+  
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  isActive          Boolean   @default(true)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property          Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  apartment         Apartment? @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  
+  @@unique([propertyId, apartmentId, effectiveFrom])
+  @@index([propertyId])
+  @@index([apartmentId])
+  @@index([isActive])
 }
