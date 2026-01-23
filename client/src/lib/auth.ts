@@ -10,11 +10,20 @@ export const authService = {
 
   login: async (data: LoginRequest) => {
     const response = await api.post<AuthResponse>('/auth/login', data);
-    if (response.data.accessToken) {
-      Cookies.set('accessToken', response.data.accessToken, { expires: 1 });
-      Cookies.set('refreshToken', response.data.refreshToken, { expires: 7 });
+    if (response.data.data?.accessToken) {
+      Cookies.set('accessToken', response.data.data.accessToken, { expires: 1 });
+      Cookies.set('refreshToken', response.data.data.refreshToken, { expires: 7 });
+      if (response.data.data.user?.role) {
+        Cookies.set('userRole', response.data.data.user.role, { expires: 1 });
+      }
     }
-    return response.data;
+    // Return in the format the login page expects
+    return {
+      user: response.data.data?.user,
+      requiresMFA: response.data.requiresMFA,
+      accessToken: response.data.data?.accessToken,
+      refreshToken: response.data.data?.refreshToken,
+    };
   },
 
   verifyOTP: async (userId: string, code: string, type: 'EMAIL' | 'PHONE') => {
