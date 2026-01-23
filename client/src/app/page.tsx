@@ -189,23 +189,9 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
               <p className="text-gray-600 mt-1">{userName}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${roleColors[userRole!]}`}>
-                {roleDescriptions[userRole!]}
-              </span>
-              <Link
-                href="/login"
-                onClick={() => {
-                  Cookies.remove('accessToken');
-                  Cookies.remove('refreshToken');
-                  Cookies.remove('userRole');
-                  localStorage.removeItem('userData');
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                Logout
-              </Link>
-            </div>
+            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${roleColors[userRole!]}`}>
+              {roleDescriptions[userRole!]}
+            </span>
           </div>
         </div>
       </div>

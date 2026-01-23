@@ -35,12 +35,22 @@ export default function Header() {
     }
   }, []);
 
-  const handleLogout = () => {
-    Cookies.remove('accessToken');
-    Cookies.remove('refreshToken');
-    Cookies.remove('userRole');
-    localStorage.removeItem('userData');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      // Call logout API if available
+      // await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear all auth data
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
+      Cookies.remove('userRole');
+      localStorage.removeItem('userData');
+      setIsLoggedIn(false);
+      setUserRole(null);
+      router.push('/login');
+    }
   };
 
   const navLinks = [

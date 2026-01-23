@@ -60,24 +60,24 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
-              href="/admin/users"
-              className="block w-full py-3 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-center font-medium"
+              href="/dashboard/admin"
+              className="py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center font-medium transition-colors"
             >
-              Manage Users
+              👥 User Management
             </Link>
             <Link
-              href="/admin/properties"
-              className="block w-full py-3 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-center font-medium"
+              href="/dashboard/admin"
+              className="py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 text-center font-medium transition-colors"
             >
-              Manage Properties
+              🏢 Properties
             </Link>
             <Link
-              href="/admin/reports"
-              className="block w-full py-3 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-center font-medium"
+              href="/reports"
+              className="py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center font-medium transition-colors"
             >
-              View Reports
+              📊 Financial Reports
             </Link>
           </div>
         </div>
