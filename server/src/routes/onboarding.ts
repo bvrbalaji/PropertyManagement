@@ -30,14 +30,15 @@ router.post(
 );
 
 // Security deposit payment
-router.post(
-  '/:onboardingId/initiate-payment',
-  onboardingController.initiateSecurityDepositPayment,
-);
-router.post(
-  '/:onboardingId/verify-payment',
-  onboardingController.verifySecurityDepositPayment,
-);
+// COMMENTED OUT - Payment process to be enabled later
+// router.post(
+//   '/:onboardingId/initiate-payment',
+//   onboardingController.initiateSecurityDepositPayment,
+// );
+// router.post(
+//   '/:onboardingId/verify-payment',
+//   onboardingController.verifySecurityDepositPayment,
+// );
 
 // Parking assignment
 router.post(

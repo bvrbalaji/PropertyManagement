@@ -258,50 +258,51 @@ export class OffboardingService {
 
   /**
    * Process refund
+   * COMMENTED OUT - Payment process to be enabled later
    */
-  async processRefund(
-    offboardingId: string,
-    paymentGateway: string,
-    refundDetails: any,
-  ) {
-    try {
-      const settlement = await prisma.finalSettlement.findUnique({
-        where: { offboardingId },
-      });
-
-      if (!settlement) {
-        throw new Error('Settlement record not found');
-      }
-
-      // Update settlement with refund details
-      const updatedSettlement = await prisma.finalSettlement.update({
-        where: { offboardingId },
-        data: {
-          refundStatus: 'PROCESSED',
-          refundDate: new Date(),
-        },
-      });
-
-      // Update offboarding status
-      await prisma.tenantOffboarding.update({
-        where: { id: offboardingId },
-        data: {
-          status: OffboardingStatus.REFUND_PROCESSED,
-        },
-      });
-
-      return {
-        success: true,
-        data: updatedSettlement,
-        message: 'Refund processed successfully',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
+  // async processRefund(
+  //   offboardingId: string,
+  //   paymentGateway: string,
+  //   refundDetails: any,
+  // ) {
+  //   try {
+  //     const settlement = await prisma.finalSettlement.findUnique({
+  //       where: { offboardingId },
+  //     });
+  //
+  //     if (!settlement) {
+  //       throw new Error('Settlement record not found');
+  //     }
+  //
+  //     // Update settlement with refund details
+  //     const updatedSettlement = await prisma.finalSettlement.update({
+  //       where: { offboardingId },
+  //       data: {
+  //         refundStatus: 'PROCESSED',
+  //         refundDate: new Date(),
+  //       },
+  //     });
+  //
+  //     // Update offboarding status
+  //     await prisma.tenantOffboarding.update({
+  //       where: { id: offboardingId },
+  //       data: {
+  //         status: OffboardingStatus.REFUND_PROCESSED,
+  //       },
+  //     });
+  //
+  //     return {
+  //       success: true,
+  //       data: updatedSettlement,
+  //       message: 'Refund processed successfully',
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       error: error instanceof Error ? error.message : 'Unknown error',
+  //     };
+  //   }
+  // }
 
   /**
    * Issue clearance certificate

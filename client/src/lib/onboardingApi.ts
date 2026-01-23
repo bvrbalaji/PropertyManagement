@@ -64,35 +64,36 @@ class OnboardingApiClient {
   }
 
   // Payment
-  async initiateSecurityDepositPayment(
-    onboardingId: string,
-    amount: number,
-    customerEmail: string,
-    customerPhone: string,
-    paymentGateway?: string,
-  ) {
-    return this.client.post(`/${onboardingId}/initiate-payment`, {
-      amount,
-      customerEmail,
-      customerPhone,
-      paymentGateway: paymentGateway || 'RAZORPAY',
-    });
-  }
+  // COMMENTED OUT - Payment process to be enabled later
+  // async initiateSecurityDepositPayment(
+  //   onboardingId: string,
+  //   amount: number,
+  //   customerEmail: string,
+  //   customerPhone: string,
+  //   paymentGateway?: string,
+  // ) {
+  //   return this.client.post(`/${onboardingId}/initiate-payment`, {
+  //     amount,
+  //     customerEmail,
+  //     customerPhone,
+  //     paymentGateway: paymentGateway || 'RAZORPAY',
+  //   });
+  // }
 
-  async verifySecurityDepositPayment(
-    onboardingId: string,
-    orderId: string,
-    paymentId: string,
-    signature: string,
-    amount: number,
-  ) {
-    return this.client.post(`/${onboardingId}/verify-payment`, {
-      orderId,
-      paymentId,
-      signature,
-      amount,
-    });
-  }
+  // async verifySecurityDepositPayment(
+  //   onboardingId: string,
+  //   orderId: string,
+  //   paymentId: string,
+  //   signature: string,
+  //   amount: number,
+  // ) {
+  //   return this.client.post(`/${onboardingId}/verify-payment`, {
+  //     orderId,
+  //     paymentId,
+  //     signature,
+  //     amount,
+  //   });
+  // }
 
   // Parking
   async assignParkingSlot(onboardingId: string, vehicleType: string) {

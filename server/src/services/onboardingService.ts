@@ -213,51 +213,52 @@ export class OnboardingService {
 
   /**
    * Record security deposit payment
+   * COMMENTED OUT - Payment process to be enabled later
    */
-  async recordSecurityDeposit(
-    onboardingId: string,
-    amount: number,
-    paymentGateway: string,
-    paymentId: string,
-    transactionId: string,
-  ) {
-    try {
-      const payment = await prisma.onboardingPayment.create({
-        data: {
-          onboardingId,
-          amount,
-          paymentGateway,
-          paymentId,
-          transactionId,
-          status: 'SUCCESS',
-          paidAt: new Date(),
-        },
-      });
-
-      // Update onboarding status
-      const onboarding = await prisma.tenantOnboarding.update({
-        where: { id: onboardingId },
-        data: {
-          depositPaid: amount,
-          status: OnboardingStatus.DEPOSIT_PENDING,
-        },
-      });
-
-      return {
-        success: true,
-        data: {
-          payment,
-          onboarding,
-        },
-        message: 'Security deposit recorded successfully',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
+  // async recordSecurityDeposit(
+  //   onboardingId: string,
+  //   amount: number,
+  //   paymentGateway: string,
+  //   paymentId: string,
+  //   transactionId: string,
+  // ) {
+  //   try {
+  //     const payment = await prisma.onboardingPayment.create({
+  //       data: {
+  //         onboardingId,
+  //         amount,
+  //         paymentGateway,
+  //         paymentId,
+  //         transactionId,
+  //         status: 'SUCCESS',
+  //         paidAt: new Date(),
+  //       },
+  //     });
+  //
+  //     // Update onboarding status
+  //     const onboarding = await prisma.tenantOnboarding.update({
+  //       where: { id: onboardingId },
+  //       data: {
+  //         depositPaid: amount,
+  //         status: OnboardingStatus.DEPOSIT_PENDING,
+  //       },
+  //     });
+  //
+  //     return {
+  //       success: true,
+  //       data: {
+  //         payment,
+  //         onboarding,
+  //       },
+  //       message: 'Security deposit recorded successfully',
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       error: error instanceof Error ? error.message : 'Unknown error',
+  //     };
+  //   }
+  // }
 
   /**
    * Get onboarding details

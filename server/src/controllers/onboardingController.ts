@@ -139,92 +139,94 @@ export class OnboardingController {
 
   /**
    * Initiate security deposit payment
+   * COMMENTED OUT - Payment process to be enabled later
    */
-  async initiateSecurityDepositPayment(req: Request, res: Response) {
-    try {
-      const { onboardingId } = req.params;
-      const { amount, customerEmail, customerPhone, paymentGateway } =
-        req.body;
-
-      const onboarding = await onboardingService.getOnboardingDetails(
-        onboardingId,
-      );
-
-      if (!onboarding.success) {
-        return res.status(400).json(onboarding);
-      }
-
-      const paymentResult = await paymentGatewayService.initiateRazorpayPayment(
-        {
-          amount,
-          currency: 'INR',
-          description: `Security Deposit - Onboarding ${onboardingId}`,
-          customerId: onboarding.data.tenantId,
-          customerEmail,
-          customerPhone,
-          metadata: {
-            onboardingId,
-            type: 'SECURITY_DEPOSIT',
-          },
-        },
-      );
-
-      if (!paymentResult.success) {
-        return res.status(400).json(paymentResult);
-      }
-
-      return res.status(200).json(paymentResult);
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      });
-    }
-  }
+  // async initiateSecurityDepositPayment(req: Request, res: Response) {
+  //   try {
+  //     const { onboardingId } = req.params;
+  //     const { amount, customerEmail, customerPhone, paymentGateway } =
+  //       req.body;
+  //
+  //     const onboarding = await onboardingService.getOnboardingDetails(
+  //       onboardingId,
+  //     );
+  //
+  //     if (!onboarding.success) {
+  //       return res.status(400).json(onboarding);
+  //     }
+  //
+  //     const paymentResult = await paymentGatewayService.initiateRazorpayPayment(
+  //       {
+  //         amount,
+  //         currency: 'INR',
+  //         description: `Security Deposit - Onboarding ${onboardingId}`,
+  //         customerId: onboarding.data.tenantId,
+  //         customerEmail,
+  //         customerPhone,
+  //         metadata: {
+  //           onboardingId,
+  //           type: 'SECURITY_DEPOSIT',
+  //         },
+  //       },
+  //     );
+  //
+  //     if (!paymentResult.success) {
+  //       return res.status(400).json(paymentResult);
+  //     }
+  //
+  //     return res.status(200).json(paymentResult);
+  //   } catch (error) {
+  //     return res.status(500).json({
+  //       success: false,
+  //       error: error instanceof Error ? error.message : 'Internal server error',
+  //     });
+  //   }
+  // }
 
   /**
    * Verify security deposit payment
+   * COMMENTED OUT - Payment process to be enabled later
    */
-  async verifySecurityDepositPayment(req: Request, res: Response) {
-    try {
-      const { onboardingId } = req.params;
-      const { orderId, paymentId, signature, amount } = req.body;
-
-      // Verify payment
-      const verifyResult = await paymentGatewayService.verifyRazorpayPayment(
-        orderId,
-        paymentId,
-        signature,
-      );
-
-      if (!verifyResult.success || !verifyResult.verified) {
-        return res.status(400).json({
-          success: false,
-          error: 'Payment verification failed',
-        });
-      }
-
-      // Record payment
-      const depositResult = await onboardingService.recordSecurityDeposit(
-        onboardingId,
-        amount,
-        'RAZORPAY',
-        paymentId,
-        orderId,
-      );
-
-      if (!depositResult.success) {
-        return res.status(400).json(depositResult);
-      }
-
-      return res.status(200).json(depositResult);
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      });
-    }
-  }
+  // async verifySecurityDepositPayment(req: Request, res: Response) {
+  //   try {
+  //     const { onboardingId } = req.params;
+  //     const { orderId, paymentId, signature, amount } = req.body;
+  //
+  //     // Verify payment
+  //     const verifyResult = await paymentGatewayService.verifyRazorpayPayment(
+  //       orderId,
+  //       paymentId,
+  //       signature,
+  //     );
+  //
+  //     if (!verifyResult.success || !verifyResult.verified) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         error: 'Payment verification failed',
+  //       });
+  //     }
+  //
+  //     // Record payment
+  //     const depositResult = await onboardingService.recordSecurityDeposit(
+  //       onboardingId,
+  //       amount,
+  //       'RAZORPAY',
+  //       paymentId,
+  //       orderId,
+  //     );
+  //
+  //     if (!depositResult.success) {
+  //       return res.status(400).json(depositResult);
+  //     }
+  //
+  //     return res.status(200).json(depositResult);
+  //   } catch (error) {
+  //     return res.status(500).json({
+  //       success: false,
+  //       error: error instanceof Error ? error.message : 'Internal server error',
+  //     });
+  //   }
+  // }
 
   /**
    * Assign parking slot

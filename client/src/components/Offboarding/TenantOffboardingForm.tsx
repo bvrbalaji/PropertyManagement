@@ -139,29 +139,30 @@ export default function TenantOffboardingForm({
   };
 
   // Step 5: Process Refund
-  const handleProcessRefund = async () => {
-    try {
-      setIsLoading(true);
+  // COMMENTED OUT - Payment process to be enabled later
+  // const handleProcessRefund = async () => {
+  //   try {
+  //     setIsLoading(true);
 
-      const response = await offboardingApi.processRefund(
-        offboardingId,
-        'RAZORPAY',
-        {
-          bankAccount: 'XXXXXX1234',
-          ifscCode: 'SBIN0001234',
-        },
-      );
+  //     const response = await offboardingApi.processRefund(
+  //       offboardingId,
+  //       'RAZORPAY',
+  //       {
+  //         bankAccount: 'XXXXXX1234',
+  //         ifscCode: 'SBIN0001234',
+  //       },
+  //     );
 
-      if (response.data.success) {
-        setStep(6);
-        toast.success('Refund processed successfully');
-      }
-    } catch (error) {
-      toast.error('Failed to process refund');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     if (response.data.success) {
+  //       setStep(6);
+  //       toast.success('Refund processed successfully');
+  //     }
+  //   } catch (error) {
+  //     toast.error('Failed to process refund');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // Step 6: Issue Certificate and Complete
   const handleCompleteOffboarding = async () => {
@@ -439,7 +440,8 @@ export default function TenantOffboardingForm({
       )}
 
       {/* Step 5: Process Refund */}
-      {step === 5 && (
+      {/* COMMENTED OUT - Payment process to be enabled later */}
+      {/* {step === 5 && (
         <div className="space-y-4">
           <div className="p-4 bg-green-50 rounded-md">
             <p className="text-sm text-green-700">
@@ -467,7 +469,7 @@ export default function TenantOffboardingForm({
             </button>
           </div>
         </div>
-      )}
+      )} */
 
       {/* Step 6: Completion */}
       {step === 6 && (

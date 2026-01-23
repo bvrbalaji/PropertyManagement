@@ -146,51 +146,52 @@ export default function TenantOnboardingForm({
   };
 
   // Step 4: Process Payment
-  const handlePayment = async (amount: number) => {
-    try {
-      setIsLoading(true);
+  // COMMENTED OUT - Payment process to be enabled later
+  // const handlePayment = async (amount: number) => {
+  //   try {
+  //     setIsLoading(true);
 
-      // Initiate payment
-      const initiateResponse = await onboardingApi.initiateSecurityDepositPayment(
-        onboardingId,
-        amount,
-        'user@example.com',
-        '9876543210',
-      );
+  //     // Initiate payment
+  //     const initiateResponse = await onboardingApi.initiateSecurityDepositPayment(
+  //       onboardingId,
+  //       amount,
+  //       'user@example.com',
+  //       '9876543210',
+  //     );
 
-      if (initiateResponse.data.success) {
-        const { orderId } = initiateResponse.data.data;
+  //     if (initiateResponse.data.success) {
+  //       const { orderId } = initiateResponse.data.data;
 
-        // Simulate Razorpay payment (in real implementation, use Razorpay SDK)
-        // This would trigger the Razorpay payment gateway
-        toast.success('Payment initiated. Please complete payment in the popup.');
+  //       // Simulate Razorpay payment (in real implementation, use Razorpay SDK)
+  //       // This would trigger the Razorpay payment gateway
+  //       toast.success('Payment initiated. Please complete payment in the popup.');
 
-        // After payment completion, verify payment
-        setTimeout(async () => {
-          try {
-            const verifyResponse = await onboardingApi.verifySecurityDepositPayment(
-              onboardingId,
-              orderId,
-              'mock_payment_id',
-              'mock_signature',
-              amount,
-            );
+  //       // After payment completion, verify payment
+  //       setTimeout(async () => {
+  //         try {
+  //           const verifyResponse = await onboardingApi.verifySecurityDepositPayment(
+  //             onboardingId,
+  //             orderId,
+  //             'mock_payment_id',
+  //             'mock_signature',
+  //             amount,
+  //           );
 
-            if (verifyResponse.data.success) {
-              setStep(5);
-              toast.success('Payment verified successfully');
-            }
-          } catch (error) {
-            toast.error('Payment verification failed');
-          }
-        }, 2000);
-      }
-    } catch (error) {
-      toast.error('Failed to initiate payment');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //           if (verifyResponse.data.success) {
+  //             setStep(5);
+  //             toast.success('Payment verified successfully');
+  //           }
+  //         } catch (error) {
+  //           toast.error('Payment verification failed');
+  //         }
+  //       }, 2000);
+  //     }
+  //   } catch (error) {
+  //     toast.error('Failed to initiate payment');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // Step 5: Assign Parking
   const handleAssignParking = async () => {
@@ -448,7 +449,8 @@ export default function TenantOnboardingForm({
       )}
 
       {/* Step 4: Security Deposit Payment */}
-      {step === 4 && (
+      {/* COMMENTED OUT - Payment process to be enabled later */}
+      {/* {step === 4 && (
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 rounded-md">
             <p className="text-sm text-gray-700">
@@ -471,7 +473,7 @@ export default function TenantOnboardingForm({
             Back
           </button>
         </div>
-      )}
+      )} */
 
       {/* Step 5: Parking Assignment */}
       {step === 5 && (

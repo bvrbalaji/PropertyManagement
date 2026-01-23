@@ -60,12 +60,13 @@ class OffboardingApiClient {
   }
 
   // Refund
-  async processRefund(offboardingId: string, paymentGateway: string, refundDetails: any) {
-    return this.client.post(`/${offboardingId}/process-refund`, {
-      paymentGateway,
-      refundDetails,
-    });
-  }
+  // COMMENTED OUT - Payment process to be enabled later
+  // async processRefund(offboardingId: string, paymentGateway: string, refundDetails: any) {
+  //   return this.client.post(`/${offboardingId}/process-refund`, {
+  //     paymentGateway,
+  //     refundDetails,
+  //   });
+  // }
 
   // Clearance certificate
   async issueClearanceCertificate(offboardingId: string, certificateUrl: string) {

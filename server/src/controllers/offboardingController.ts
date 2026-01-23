@@ -122,30 +122,31 @@ export class OffboardingController {
 
   /**
    * Process refund
+   * COMMENTED OUT - Payment process to be enabled later
    */
-  async processRefund(req: Request, res: Response) {
-    try {
-      const { offboardingId } = req.params;
-      const { paymentGateway, refundDetails } = req.body;
-
-      const result = await offboardingService.processRefund(
-        offboardingId,
-        paymentGateway,
-        refundDetails,
-      );
-
-      if (!result.success) {
-        return res.status(400).json(result);
-      }
-
-      return res.status(200).json(result);
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      });
-    }
-  }
+  // async processRefund(req: Request, res: Response) {
+  //   try {
+  //     const { offboardingId } = req.params;
+  //     const { paymentGateway, refundDetails } = req.body;
+  //
+  //     const result = await offboardingService.processRefund(
+  //       offboardingId,
+  //       paymentGateway,
+  //       refundDetails,
+  //     );
+  //
+  //     if (!result.success) {
+  //       return res.status(400).json(result);
+  //     }
+  //
+  //     return res.status(200).json(result);
+  //   } catch (error) {
+  //     return res.status(500).json({
+  //       success: false,
+  //       error: error instanceof Error ? error.message : 'Internal server error',
+  //     });
+  //   }
+  // }
 
   /**
    * Issue clearance certificate

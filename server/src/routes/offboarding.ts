@@ -30,10 +30,11 @@ router.post(
   '/:offboardingId/calculate-settlement',
   offboardingController.calculateFinalSettlement,
 );
-router.post(
-  '/:offboardingId/process-refund',
-  offboardingController.processRefund,
-);
+// COMMENTED OUT - Payment process to be enabled later
+// router.post(
+//   '/:offboardingId/process-refund',
+//   offboardingController.processRefund,
+// );
 
 // Clearance certificate
 router.post(
