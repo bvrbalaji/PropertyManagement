@@ -194,74 +194,79 @@ class NotificationsAPI {
     }
   }
 
-  // ============ DEVICES ============
+  // ============ DEVICES - DISABLED ============
+  // TODO: Enable push notifications later
 
   /**
    * Register push device
+   * DISABLED: Push notifications disabled - enable later
    */
-  async registerDevice(data: {
-    token: string;
-    deviceId: string;
-    deviceType: 'ios' | 'android' | 'web';
-    deviceModel?: string;
-    osVersion?: string;
-    appVersion?: string;
-  }) {
-    try {
-      const response = await this.api.post('/devices/register', data);
-      return response.data;
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message,
-      };
-    }
-  }
+  // async registerDevice(data: {
+  //   token: string;
+  //   deviceId: string;
+  //   deviceType: 'ios' | 'android' | 'web';
+  //   deviceModel?: string;
+  //   osVersion?: string;
+  //   appVersion?: string;
+  // }) {
+  //   try {
+  //     const response = await this.api.post('/devices/register', data);
+  //     return response.data;
+  //   } catch (error: any) {
+  //     return {
+  //       success: false,
+  //       error: error.response?.data?.error || error.message,
+  //     };
+  //   }
+  // }
 
   /**
    * Get user devices
+   * DISABLED: Push notifications disabled - enable later
    */
-  async getUserDevices() {
-    try {
-      const response = await this.api.get('/devices');
-      return response.data;
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message,
-      };
-    }
-  }
+  // async getUserDevices() {
+  //   try {
+  //     const response = await this.api.get('/devices');
+  //     return response.data;
+  //   } catch (error: any) {
+  //     return {
+  //       success: false,
+  //       error: error.response?.data?.error || error.message,
+  //     };
+  //   }
+  // }
 
   /**
    * Unregister device
+   * DISABLED: Push notifications disabled - enable later
    */
-  async unregisterDevice(deviceId: string) {
-    try {
-      const response = await this.api.delete(`/devices/${deviceId}`);
-      return response.data;
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message,
-      };
-    }
-  }
+  // async unregisterDevice(deviceId: string) {
+  //   try {
+  //     const response = await this.api.delete(`/devices/${deviceId}`);
+  //     return response.data;
+  //   } catch (error: any) {
+  //     return {
+  //       success: false,
+  //       error: error.response?.data?.error || error.message,
+  //     };
+  //   }
+  // }
 
   /**
    * Track push notification engagement
+   * DISABLED: Push notifications disabled - enable later
    */
-  async trackEngagement(deliveryId: string, event: 'opened' | 'clicked') {
-    try {
-      const response = await this.api.post(`/devices/${deliveryId}/track/${event}`);
-      return response.data;
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message,
-      };
-    }
-  }
+  // async trackEngagement(deliveryId: string, event: 'opened' | 'clicked') {
+  //   try {
+  //     const response = await this.api.post(`/devices/${deliveryId}/track/${event}`);
+  //     return response.data;
+  //   } catch (error: any) {
+  //     return {
+  //       success: false,
+  //       error: error.response?.data?.error || error.message,
+  //     };
+  //   }
+  // }
 
   // ============ TEMPLATES ============
 

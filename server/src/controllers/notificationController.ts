@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import notificationManagerService from '../services/notificationManagerService';
 import notificationPreferenceService from '../services/notificationPreferenceService';
 import notificationTemplateService from '../services/notificationTemplateService';
-import pushService from '../services/pushNotificationService';
+// import pushService from '../services/pushNotificationService'; // TODO: Enable push notifications later
 import prisma from '../config/database';
 import { NotificationChannel, NotificationType } from '@prisma/client';
 
@@ -252,74 +252,77 @@ class NotificationController {
 
   /**
    * Register push device
+   * TODO: Enable push notifications later
    */
-  async registerDevice(req: Request, res: Response) {
-    try {
-      const userId = (req as any).userId;
-      const { token, deviceId, deviceType, deviceModel, osVersion, appVersion } = req.body;
-
-      const result = await pushService.registerDevice(userId, token, {
-        deviceId,
-        deviceType: deviceType as 'ios' | 'android' | 'web',
-        deviceModel,
-        osVersion,
-        appVersion,
-      });
-
-      if (!result.success) {
-        return res.status(400).json({ success: false, error: result.error });
-      }
-
-      res.json({
-        success: true,
-        data: { deviceTokenId: result.deviceTokenId },
-      });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
+  // async registerDevice(req: Request, res: Response) {
+  //   try {
+  //     const userId = (req as any).userId;
+  //     const { token, deviceId, deviceType, deviceModel, osVersion, appVersion } = req.body;
+  //
+  //     const result = await pushService.registerDevice(userId, token, {
+  //       deviceId,
+  //       deviceType: deviceType as 'ios' | 'android' | 'web',
+  //       deviceModel,
+  //       osVersion,
+  //       appVersion,
+  //     });
+  //
+  //     if (!result.success) {
+  //       return res.status(400).json({ success: false, error: result.error });
+  //     }
+  //
+  //     res.json({
+  //       success: true,
+  //       data: { deviceTokenId: result.deviceTokenId },
+  //     });
+  //   } catch (error: any) {
+  //     res.status(500).json({ success: false, error: error.message });
+  //   }
+  // }
 
   /**
    * Get user devices
+   * TODO: Enable push notifications later
    */
-  async getUserDevices(req: Request, res: Response) {
-    try {
-      const userId = (req as any).userId;
-
-      const result = await pushService.getUserDevices(userId);
-
-      if (!result.success) {
-        return res.status(400).json({ success: false, error: result.error });
-      }
-
-      res.json({
-        success: true,
-        data: result.devices,
-      });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
+  // async getUserDevices(req: Request, res: Response) {
+  //   try {
+  //     const userId = (req as any).userId;
+  //
+  //     const result = await pushService.getUserDevices(userId);
+  //
+  //     if (!result.success) {
+  //       return res.status(400).json({ success: false, error: result.error });
+  //     }
+  //
+  //     res.json({
+  //       success: true,
+  //       data: result.devices,
+  //     });
+  //   } catch (error: any) {
+  //     res.status(500).json({ success: false, error: error.message });
+  //   }
+  // }
 
   /**
    * Unregister device
+   * TODO: Enable push notifications later
    */
-  async unregisterDevice(req: Request, res: Response) {
-    try {
-      const userId = (req as any).userId;
-      const { deviceId } = req.params;
-
-      const result = await pushService.unregisterDevice(userId, deviceId);
-
-      if (!result.success) {
-        return res.status(400).json({ success: false, error: result.error });
-      }
-
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
+  // async unregisterDevice(req: Request, res: Response) {
+  //   try {
+  //     const userId = (req as any).userId;
+  //     const { deviceId } = req.params;
+  //
+  //     const result = await pushService.unregisterDevice(userId, deviceId);
+  //
+  //     if (!result.success) {
+  //       return res.status(400).json({ success: false, error: result.error });
+  //     }
+  //
+  //     res.json({ success: true });
+  //   } catch (error: any) {
+  //     res.status(500).json({ success: false, error: error.message });
+  //   }
+  // }
 
   /**
    * Create notification template
@@ -407,22 +410,23 @@ class NotificationController {
 
   /**
    * Track push engagement
+   * TODO: Enable push notifications later
    */
-  async trackEngagement(req: Request, res: Response) {
-    try {
-      const { deliveryId, event } = req.params;
-
-      const result = await pushService.trackEngagement(deliveryId, event as 'opened' | 'clicked');
-
-      if (!result.success) {
-        return res.status(400).json({ success: false, error: result.error });
-      }
-
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
+  // async trackEngagement(req: Request, res: Response) {
+  //   try {
+  //     const { deliveryId, event } = req.params;
+  //
+  //     const result = await pushService.trackEngagement(deliveryId, event as 'opened' | 'clicked');
+  //
+  //     if (!result.success) {
+  //       return res.status(400).json({ success: false, error: result.error });
+  //     }
+  //
+  //     res.json({ success: true });
+  //   } catch (error: any) {
+  //     res.status(500).json({ success: false, error: error.message });
+  //   }
+  // }
 }
 
 export default new NotificationController();

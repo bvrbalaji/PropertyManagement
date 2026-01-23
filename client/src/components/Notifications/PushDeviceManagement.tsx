@@ -1,5 +1,46 @@
 'use client';
 
+import React from 'react';
+
+/**
+ * Push Device Management Component
+ * DISABLED: Push notifications are disabled and will be enabled later
+ * 
+ * This component is temporarily disabled. Once push notification support
+ * is ready to be enabled, uncomment the original implementation.
+ */
+
+export default function PushDeviceManagement() {
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Push Notification Devices</h1>
+        <p className="text-gray-600">Manage devices that receive push notifications</p>
+      </div>
+
+      {/* Disabled Notice */}
+      <div className="bg-yellow-50 rounded-lg shadow p-6 border-l-4 border-yellow-400">
+        <h2 className="text-lg font-semibold text-yellow-900 mb-2">⏸️ Push Notifications Disabled</h2>
+        <p className="text-yellow-800 mb-4">
+          Push notification functionality is currently disabled and will be enabled in a future release. 
+          Please check back later for this feature.
+        </p>
+        <p className="text-sm text-yellow-700">
+          When enabled, you will be able to register devices to receive push notifications on your browser.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/*
+TODO: Restore this implementation when push notifications are ready to be enabled
+
+ORIGINAL COMMENTED CODE:
+
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { notificationsApi } from '@/lib/notificationsApi';
 
@@ -29,7 +70,7 @@ export default function PushDeviceManagement() {
   const fetchDevices = async () => {
     try {
       setLoading(true);
-      const response = await notificationsApi.getDevices();
+      const response = await notificationsApi.getUserDevices();
       if (response.success) {
         setDevices(response.data || []);
       }
@@ -46,13 +87,11 @@ export default function PushDeviceManagement() {
       setRegistering(true);
       setError('');
 
-      // Check if device registration is supported
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         setError('Push notifications not supported in this browser');
         return;
       }
 
-      // Request notification permission
       if (Notification.permission === 'denied') {
         setError('Notification permission denied. Please enable it in browser settings.');
         return;
@@ -66,7 +105,6 @@ export default function PushDeviceManagement() {
         }
       }
 
-      // Register service worker and get device token
       const registration = await navigator.serviceWorker.register('/sw.js');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -75,7 +113,6 @@ export default function PushDeviceManagement() {
 
       const token = JSON.stringify(subscription);
 
-      // Send token to backend
       const response = await notificationsApi.registerDevice({
         token,
         deviceId: navigator.userAgent.substring(0, 50),
@@ -246,3 +283,4 @@ export default function PushDeviceManagement() {
     </div>
   );
 }
+*/

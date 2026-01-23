@@ -2,7 +2,7 @@
 import prisma from '../config/database';
 import emailService from './emailNotificationService';
 import smsService from './smsNotificationService';
-import pushService from './pushNotificationService';
+// import pushService from './pushNotificationService'; // TODO: Enable push notifications later
 import {
   Notification,
   NotificationChannel,
@@ -153,12 +153,14 @@ class NotificationManagerService {
               continue;
             }
           } else if (channel === NotificationChannel.PUSH) {
-            result = await pushService.sendPush({
-              recipientId: recipient.id,
-              notificationId,
-              title: notification.subject,
-              body: notification.body,
-            });
+            // Push notifications disabled - enable later
+            // result = await pushService.sendPush({
+            //   recipientId: recipient.id,
+            //   notificationId,
+            //   title: notification.subject,
+            //   body: notification.body,
+            // });
+            result = { success: true, deliveryId: 'disabled' }; // Temporarily skip
           } else if (channel === NotificationChannel.IN_APP) {
             result = await this.createInAppNotification({
               userId: recipient.id,
