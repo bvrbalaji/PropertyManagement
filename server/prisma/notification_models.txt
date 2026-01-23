@@ -1,0 +1,333 @@
+
+// Notification System Models
+
+model NotificationTemplate {
+  id                String    @id @default(cuid())
+  propertyId        String?   // null = system default
+  
+  // Template info
+  name              String
+  code              String    @unique
+  notificationType  NotificationType
+  channel           NotificationChannel
+  
+  // Template content
+  subject           String
+  body              String    // HTML/Markdown content
+  variables         Json?     // Variables used: {tenantName}, {invoiceAmount}, etc.
+  
+  // Status & Versions
+  isActive          Boolean   @default(true)
+  version           Int       @default(1)
+  createdBy         String
+  updatedBy         String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property          Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdByUser     User      @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  updatedByUser     User?     @relation("TemplateUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
+  
+  @@index([propertyId])
+  @@index([notificationType])
+  @@index([channel])
+  @@index([isActive])
+}
+
+model NotificationPreference {
+  id                String    @id @default(cuid())
+  userId            String
+  
+  // Channel preferences
+  emailEnabled      Boolean   @default(true)
+  smsEnabled        Boolean   @default(true)
+  pushEnabled       Boolean   @default(true)
+  inAppEnabled      Boolean   @default(true)
+  whatsappEnabled   Boolean   @default(false)
+  
+  // Notification type preferences
+  invoiceNotifications    Boolean @default(true)
+  paymentNotifications    Boolean @default(true)
+  maintenanceNotifications Boolean @default(true)
+  broadcastNotifications  Boolean @default(true)
+  emergencyNotifications  Boolean @default(true)
+  systemNotifications     Boolean @default(true)
+  
+  // Timing preferences
+  quietHourStart    Int?
+  quietHourEnd      Int?
+  doNotDisturbEnabled Boolean @default(false)
+  
+  // Email settings
+  weeklyDigest      Boolean   @default(false)
+  dailyDigest       Boolean   @default(false)
+  instantNotifications Boolean @default(true)
+  
+  // SMS settings
+  smsFrequency      String    @default("immediate")
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId])
+  @@index([userId])
+}
+
+model Notification {
+  id                String    @id @default(cuid())
+  propertyId        String?
+  
+  // Recipient targeting
+  recipientType     String    @default("individual")
+  recipientIds      String[]
+  targetFloors      String[]
+  targetApartments  String[]
+  
+  // Notification content
+  notificationType  NotificationType
+  subject           String
+  body              String
+  htmlBody          String?
+  
+  // Template reference
+  templateId        String?
+  templateVariables Json?
+  
+  // Channels
+  channels          NotificationChannel[]
+  
+  // Status
+  status            NotificationStatus @default(DRAFT)
+  scheduledFor      DateTime?
+  sentAt            DateTime?
+  
+  // Tracking
+  totalRecipients   Int       @default(0)
+  sentCount         Int       @default(0)
+  deliveredCount    Int       @default(0)
+  failedCount       Int       @default(0)
+  openedCount       Int       @default(0)
+  clickedCount      Int       @default(0)
+  
+  // Retry settings
+  retryAttempts     Int       @default(0)
+  maxRetries        Int       @default(3)
+  nextRetryAt       DateTime?
+  
+  // Metadata
+  priority          String    @default("normal")
+  expiresAt         DateTime?
+  createdBy         String
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property          Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  template          NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdByUser     User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  deliveries        NotificationDelivery[]
+  
+  @@index([propertyId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdBy])
+  @@index([priority])
+}
+
+model NotificationDelivery {
+  id                String    @id @default(cuid())
+  notificationId    String
+  recipientId       String
+  
+  // Delivery info
+  channel           NotificationChannel
+  destination       String
+  
+  // Status
+  status            NotificationDeliveryStatus @default(PENDING)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  bouncedAt         DateTime?
+  
+  // Tracking
+  openedAt          DateTime?
+  clickedAt         DateTime?
+  openCount        Int       @default(0)
+  clickCount       Int       @default(0)
+  
+  // Error handling
+  errorCode         String?
+  errorMessage      String?
+  retryCount        Int       @default(0)
+  nextRetryAt       DateTime?
+  
+  // Device info
+  deviceId          String?
+  deviceType        String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  notification      Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  recipient         User      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  @@unique([notificationId, recipientId, channel])
+  @@index([notificationId])
+  @@index([recipientId])
+  @@index([status])
+  @@index([channel])
+  @@index([sentAt])
+}
+
+model NotificationLog {
+  id                String    @id @default(cuid())
+  notificationId    String?
+  deliveryId        String?
+  
+  event             String
+  channel           String
+  recipient         String?
+  
+  success           Boolean
+  errorCode         String?
+  errorMessage      String?
+  
+  metadata          Json?
+  
+  createdAt         DateTime  @default(now())
+  
+  @@index([notificationId])
+  @@index([deliveryId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+model BroadcastMessage {
+  id                String    @id @default(cuid())
+  propertyId        String
+  
+  title             String
+  message           String
+  htmlMessage       String?
+  
+  targetAudience    String    @default("all")
+  targetFloors      String[]
+  targetApartments  String[]
+  excludeUsers      String[]
+  
+  channels          NotificationChannel[]
+  
+  isActive          Boolean   @default(true)
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  expiresAt         DateTime?
+  
+  viewCount         Int       @default(0)
+  engagementRate    Float     @default(0)
+  
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property          Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdByUser     User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  
+  @@index([propertyId])
+  @@index([isActive])
+  @@index([sentAt])
+}
+
+model InAppNotification {
+  id                String    @id @default(cuid())
+  userId            String
+  
+  title             String
+  message           String
+  icon              String?
+  actionUrl         String?
+  
+  isRead            Boolean   @default(false)
+  readAt            DateTime?
+  isArchived        Boolean   @default(false)
+  archivedAt        DateTime?
+  
+  type              NotificationType
+  priority          String    @default("normal")
+  relatedId         String?
+  
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model PushDeviceToken {
+  id                String    @id @default(cuid())
+  userId            String
+  
+  token             String
+  deviceId          String    @unique
+  deviceType        String
+  deviceModel       String?
+  osVersion        String?
+  appVersion        String?
+  
+  isActive          Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+  verifiedAt        DateTime?
+  
+  lastUsedAt        DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@index([isActive])
+  @@index([deviceType])
+}
+
+model NotificationSchedule {
+  id                String    @id @default(cuid())
+  propertyId        String?
+  
+  name              String
+  description       String?
+  
+  triggerEvent      String
+  triggerCondition  Json?
+  
+  delayMinutes      Int?
+  scheduleTime      String?
+  daysOfWeek        Int[]
+  
+  notificationType  NotificationType
+  channels          NotificationChannel[]
+  templateId        String?
+  
+  isActive          Boolean   @default(true)
+  lastTriggeredAt   DateTime?
+  
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property          Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  template          NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdByUser     User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  
+  @@index([propertyId])
+  @@index([isActive])
+  @@index([triggerEvent])
+}
