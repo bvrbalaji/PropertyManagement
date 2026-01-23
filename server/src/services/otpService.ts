@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { sendOTPEmail } from './emailService';
+// import { sendOTPSMS } from './smsService'; // TODO: Enable SMS verification later
 import { sendOTPSMS } from './smsService';
 import { VerificationType } from '@prisma/client';
 
@@ -50,7 +51,10 @@ export const sendVerificationCode = async (
   if (type === 'EMAIL' && email) {
     return await sendOTPEmail(email, code);
   } else if (type === 'PHONE' && phone) {
-    return await sendOTPSMS(phone, code);
+    // SMS verification disabled - will enable later
+    // return await sendOTPSMS(phone, code);
+    console.log(`[DISABLED] SMS OTP for ${phone}: ${code}`);
+    return false;
   }
 
   return false;
