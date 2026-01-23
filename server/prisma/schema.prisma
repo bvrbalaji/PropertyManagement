@@ -28,6 +28,41 @@ enum VerificationType {
   PHONE
 }
 
+enum OnboardingStatus {
+  INQUIRY
+  FORM_SUBMITTED
+  INSPECTION_PENDING
+  LEASE_SIGNED
+  DEPOSIT_PENDING
+  PARKING_ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum OffboardingStatus {
+  REQUESTED
+  INSPECTION_SCHEDULED
+  INSPECTION_COMPLETED
+  SETTLEMENT_PENDING
+  REFUND_PROCESSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ParkingSlotStatus {
+  AVAILABLE
+  ASSIGNED
+  RESERVED
+  MAINTENANCE
+}
+
+enum VehicleType {
+  TWO_WHEELER
+  FOUR_WHEELER
+  SUV
+  COMMERCIAL
+}
+
 model User {
   id            String      @id @default(cuid())
   email         String      @unique
@@ -51,6 +86,8 @@ model User {
   maintenanceRequests MaintenanceRequest[]
   sessions          Session[]
   verifications     Verification[]
+  onboardings       TenantOnboarding[]  @relation("TenantOnboarding")
+  offboardings      TenantOffboarding[] @relation("TenantOffboarding")
   
   @@index([email])
   @@index([phone])
@@ -105,6 +142,10 @@ model Property {
   
   apartments        Apartment[]
   maintenanceRequests MaintenanceRequest[]
+  onboardings       TenantOnboarding[]  @relation("PropertyOnboarding")
+  offboardings      TenantOffboarding[] @relation("PropertyOffboarding")
+  inspectionChecklists InspectionChecklist[]
+  parkingSlots      ParkingSlot[]
   
   @@index([adminId])
   @@index([ownerId])
@@ -124,6 +165,8 @@ model Apartment {
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantAssignments TenantAssignment[]
   maintenanceRequests MaintenanceRequest[]
+  onboardings       TenantOnboarding[]  @relation("ApartmentOnboarding")
+  offboardings      TenantOffboarding[] @relation("ApartmentOffboarding")
   
   @@index([propertyId])
   @@unique([propertyId, unitNumber])
@@ -171,4 +214,228 @@ model MaintenanceRequest {
   @@index([staffId])
   @@index([status])
   @@index([priority])
+}
+
+// Tenant Onboarding Models
+model TenantOnboarding {
+  id                    String            @id @default(cuid())
+  tenantId              String
+  apartmentId           String
+  propertyId            String
+  status                OnboardingStatus  @default(INQUIRY)
+  moveInDate            DateTime
+  securityDeposit       Float
+  depositPaid           Float             @default(0)
+  leaseAgreement        String?           // File path/URL
+  leaseSignedAt         DateTime?
+  parkingSlotId         String?
+  inspectionChecklist   InspectionChecklist?
+  onboardingCompletedAt DateTime?
+  notificationSent      Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  
+  tenant User @relation("TenantOnboarding", fields: [tenantId], references: [id])
+  apartment Apartment @relation("ApartmentOnboarding", fields: [apartmentId], references: [id])
+  property Property @relation("PropertyOnboarding", fields: [propertyId], references: [id])
+  parkingSlot ParkingSlot? @relation(fields: [parkingSlotId], references: [id])
+  documents OnboardingDocument[]
+  payments OnboardingPayment[]
+  
+  @@index([tenantId])
+  @@index([apartmentId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([moveInDate])
+}
+
+model OnboardingDocument {
+  id                String    @id @default(cuid())
+  onboardingId      String
+  documentType      String    // LEASE, VEHICLE_REG, ID_PROOF, etc.
+  fileName          String
+  fileUrl           String
+  uploadedAt        DateTime  @default(now())
+  encryptionKey     String?
+  
+  onboarding TenantOnboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  
+  @@index([onboardingId])
+}
+
+model OnboardingPayment {
+  id                String    @id @default(cuid())
+  onboardingId      String
+  amount            Float
+  paymentGateway    String    // STRIPE, RAZORPAY, etc.
+  paymentId         String
+  status            String    // PENDING, SUCCESS, FAILED
+  transactionId     String?
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  onboarding TenantOnboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  
+  @@index([onboardingId])
+  @@index([paymentId])
+}
+
+model InspectionChecklist {
+  id                String    @id @default(cuid())
+  propertyId        String
+  name              String
+  isForOnboarding   Boolean   @default(true)
+  items             ChecklistItem[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  property Property @relation(fields: [propertyId], references: [id])
+  onboardings TenantOnboarding[]
+  offboardings TenantOffboarding[]
+  
+  @@index([propertyId])
+}
+
+model ChecklistItem {
+  id                String    @id @default(cuid())
+  checklistId       String
+  itemName          String
+  category          String    // STRUCTURAL, APPLIANCES, PLUMBING, etc.
+  createdAt         DateTime  @default(now())
+  
+  checklist InspectionChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  inspectionItems InspectionItem[]
+  
+  @@index([checklistId])
+}
+
+model InspectionItem {
+  id                String    @id @default(cuid())
+  inspectionId      String
+  checklistItemId   String
+  condition         String    // GOOD, FAIR, DAMAGED, MISSING
+  notes             String?
+  
+  inspection Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  checklistItem ChecklistItem @relation(fields: [checklistItemId], references: [id])
+  
+  @@index([inspectionId])
+}
+
+model Inspection {
+  id                String    @id @default(cuid())
+  onboardingId      String?
+  offboardingId     String?
+  inspectionDate    DateTime
+  inspectedBy       String
+  photos            InspectionPhoto[]
+  inspectionItems   InspectionItem[]
+  damageAssessment  String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  onboarding TenantOnboarding? @relation(fields: [onboardingId], references: [id], onDelete: SetNull)
+  offboarding TenantOffboarding? @relation(fields: [offboardingId], references: [id], onDelete: SetNull)
+  
+  @@index([onboardingId])
+  @@index([offboardingId])
+}
+
+model InspectionPhoto {
+  id                String    @id @default(cuid())
+  inspectionId      String
+  photoUrl          String
+  beforePhoto       String?   // For damage comparison
+  afterPhoto        String?
+  uploadedAt        DateTime  @default(now())
+  
+  inspection Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  
+  @@index([inspectionId])
+}
+
+// Parking Management
+model ParkingSlot {
+  id                String            @id @default(cuid())
+  propertyId        String
+  slotNumber        String
+  floor             String?
+  vehicleType       VehicleType
+  status            ParkingSlotStatus @default(AVAILABLE)
+  assignedToId      String?
+  assignedAt        DateTime?
+  releasedAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  property Property @relation(fields: [propertyId], references: [id])
+  assignedTo TenantOnboarding? @relation(fields: [assignedToId], references: [id])
+  
+  @@index([propertyId])
+  @@index([status])
+  @@index([assignedToId])
+  @@unique([propertyId, slotNumber])
+}
+
+// Tenant Offboarding Models
+model TenantOffboarding {
+  id                    String            @id @default(cuid())
+  tenantId              String
+  apartmentId           String
+  propertyId            String
+  onboardingId          String
+  status                OffboardingStatus @default(REQUESTED)
+  moveOutDate           DateTime?
+  noticeDate            DateTime          @default(now())
+  inspectionChecklist   InspectionChecklist?
+  inspection            Inspection?
+  finalSettlement       FinalSettlement?
+  clearanceCertificate  String?           // File path/URL
+  offboardingCompletedAt DateTime?
+  notificationSent      Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  
+  tenant User @relation("TenantOffboarding", fields: [tenantId], references: [id])
+  apartment Apartment @relation("ApartmentOffboarding", fields: [apartmentId], references: [id])
+  property Property @relation("PropertyOffboarding", fields: [propertyId], references: [id])
+  onboarding TenantOnboarding @relation(fields: [onboardingId], references: [id])
+  documents OffboardingDocument[]
+  
+  @@index([tenantId])
+  @@index([apartmentId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([moveOutDate])
+}
+
+model OffboardingDocument {
+  id                String    @id @default(cuid())
+  offboardingId     String
+  documentType      String    // FINAL_BILL, CLEARANCE, etc.
+  fileName          String
+  fileUrl           String
+  uploadedAt        DateTime  @default(now())
+  
+  offboarding TenantOffboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
+  
+  @@index([offboardingId])
+}
+
+model FinalSettlement {
+  id                String    @id @default(cuid())
+  offboardingId     String    @unique
+  securityDeposit   Float
+  damageCharges     Float     @default(0)
+  pendingDues       Float     @default(0)
+  refundAmount      Float
+  refundDate        DateTime?
+  refundStatus      String    @default("PENDING") // PENDING, PROCESSED, COMPLETED
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  offboarding TenantOffboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
+  
+  @@index([offboardingId])
 }

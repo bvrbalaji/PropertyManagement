@@ -8,6 +8,9 @@ import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import mfaRoutes from './routes/mfa';
 import dashboardRoutes from './routes/dashboard';
+import onboardingRoutes from './routes/onboarding';
+import offboardingRoutes from './routes/offboarding';
+import parkingRoutes from './routes/parking';
 
 dotenv.config();
 
@@ -35,6 +38,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/offboarding', offboardingRoutes);
+app.use('/api/parking', parkingRoutes);
 
 // Error handling
 app.use(errorHandler);
