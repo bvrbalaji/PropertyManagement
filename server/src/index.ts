@@ -11,6 +11,7 @@ import dashboardRoutes from './routes/dashboard';
 import onboardingRoutes from './routes/onboarding';
 import offboardingRoutes from './routes/offboarding';
 import parkingRoutes from './routes/parking';
+import ownerRoutes from './routes/owner';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/offboarding', offboardingRoutes);
 app.use('/api/parking', parkingRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // Error handling
 app.use(errorHandler);

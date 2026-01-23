@@ -63,6 +63,28 @@ enum VehicleType {
   COMMERCIAL
 }
 
+enum OwnershipVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum OwnershipTransferStatus {
+  INITIATED
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum CommunicationPreference {
+  EMAIL
+  SMS
+  PHONE
+  WHATSAPP
+}
+
 model User {
   id            String      @id @default(cuid())
   email         String      @unique
@@ -88,6 +110,9 @@ model User {
   verifications     Verification[]
   onboardings       TenantOnboarding[]  @relation("TenantOnboarding")
   offboardings      TenantOffboarding[] @relation("TenantOffboarding")
+  ownerProfile      OwnerProfile?
+  transfersInitiated OwnershipTransfer[] @relation("TransferInitiatedBy")
+  transfersReceived OwnershipTransfer[] @relation("TransferredTo")
   
   @@index([email])
   @@index([phone])
@@ -146,6 +171,8 @@ model Property {
   offboardings      TenantOffboarding[] @relation("PropertyOffboarding")
   inspectionChecklists InspectionChecklist[]
   parkingSlots      ParkingSlot[]
+  ownerProperties   OwnerProperty[]
+  financialData     OwnerPropertyFinancial[]
   
   @@index([adminId])
   @@index([ownerId])
@@ -438,4 +465,174 @@ model FinalSettlement {
   offboarding TenantOffboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
   
   @@index([offboardingId])
+}
+
+// ===== FLAT OWNER DETAILS MODELS =====
+
+model OwnerProfile {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  secondaryEmail        String?
+  secondaryPhone        String?
+  address               String?
+  city                  String?
+  state                 String?
+  zipCode               String?
+  country               String?
+  businessName          String?
+  businessRegistration  String?
+  panNumber             String?
+  gstin                 String?
+  bankAccountNumber     String?
+  bankIfscCode          String?
+  bankAccountName       String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  emergencyContactEmail String?
+  communicationPreference CommunicationPreference @default(EMAIL)
+  profileCompleteness   Int       @default(0) // 0-100
+  verificationStatus    OwnershipVerificationStatus @default(PENDING)
+  verifiedAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties OwnerProperty[]
+  verificationDocuments OwnershipVerificationDocument[]
+  coOwners CoOwnerRelation[] @relation("OwnerProfile")
+  coOwnerOf CoOwnerRelation[] @relation("CoOwnerProfile")
+  transfers OwnershipTransfer[] @relation("InitiatedBy")
+  transfersTo OwnershipTransfer[] @relation("TransferredTo")
+  
+  @@index([userId])
+  @@index([verificationStatus])
+}
+
+model OwnerProperty {
+  id              String    @id @default(cuid())
+  ownerProfileId  String
+  propertyId      String
+  ownershipPercentage Float @default(100) // For co-ownership
+  ownershipStartDate DateTime
+  ownershipEndDate DateTime?
+  documentUrl     String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  ownerProfile OwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  @@unique([ownerProfileId, propertyId])
+  @@index([ownerProfileId])
+  @@index([propertyId])
+}
+
+model OwnershipVerificationDocument {
+  id                String    @id @default(cuid())
+  ownerProfileId    String
+  documentType      String    // PROPERTY_DEED, RENT_AGREEMENT, ELECTRICITY_BILL, etc.
+  fileName          String
+  fileUrl           String
+  encryptionKey     String
+  uploadedAt        DateTime  @default(now())
+  expiryDate        DateTime?
+  verificationStatus OwnershipVerificationStatus @default(PENDING)
+  verifiedAt        DateTime?
+  verifiedBy        String?   // Admin ID
+  notes             String?
+  
+  ownerProfile OwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  
+  @@index([ownerProfileId])
+  @@index([verificationStatus])
+}
+
+model CoOwnerRelation {
+  id              String    @id @default(cuid())
+  ownerProfileId  String
+  coOwnerProfileId String
+  ownershipPercentage Float @default(50)
+  relationshipType String  // SPOUSE, PARENT, CHILD, BUSINESS_PARTNER, etc.
+  legalDocumentUrl String?
+  approvalStatus  String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  ownerProfile OwnerProfile @relation("OwnerProfile", fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  coOwnerProfile OwnerProfile @relation("CoOwnerProfile", fields: [coOwnerProfileId], references: [id], onDelete: Cascade)
+  
+  @@unique([ownerProfileId, coOwnerProfileId])
+  @@index([ownerProfileId])
+  @@index([coOwnerProfileId])
+}
+
+model OwnershipTransfer {
+  id                String    @id @default(cuid())
+  initiatedByUserId String
+  transferredToUserId String?
+  propertyId        String
+  ownershipPercentage Float @default(100)
+  transferDate      DateTime
+  reason            String?
+  legalDocumentUrl  String?
+  status            OwnershipTransferStatus @default(INITIATED)
+  completedAt       DateTime?
+  approvedBy        String?   // Admin ID
+  rejectionReason   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  initiatedByUser User @relation("TransferInitiatedBy", fields: [initiatedByUserId], references: [id])
+  transferredToUser User? @relation("TransferredTo", fields: [transferredToUserId], references: [id])
+  initiatorProfile OwnerProfile @relation("InitiatedBy", fields: [initiatedByUserId], references: [userId], onDelete: Cascade)
+  recipientProfile OwnerProfile? @relation("TransferredTo", fields: [transferredToUserId], references: [userId], onDelete: Cascade)
+  
+  @@index([initiatedByUserId])
+  @@index([transferredToUserId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+model OwnerPropertyFinancial {
+  id              String    @id @default(cuid())
+  ownerProfileId  String
+  propertyId      String
+  rentalIncome    Float     @default(0)
+  maintenanceFees Float     @default(0)
+  propertyTax     Float     @default(0)
+  insurance       Float     @default(0)
+  utilities       Float     @default(0)
+  otherExpenses   Float     @default(0)
+  netIncome       Float     @default(0) // rentalIncome - all expenses
+  totalTenants    Int       @default(0)
+  occupancyRate   Float     @default(0) // 0-100
+  lastUpdated     DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+  
+  ownerProfile OwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  @@unique([ownerProfileId, propertyId])
+  @@index([ownerProfileId])
+  @@index([propertyId])
+}
+
+model OwnerCommunication {
+  id              String    @id @default(cuid())
+  ownerProfileId  String
+  communicationType String  // ANNOUNCEMENT, MAINTENANCE, PAYMENT_REMINDER, etc.
+  subject         String
+  message         String
+  sentAt          DateTime
+  readAt          DateTime?
+  channel         CommunicationPreference // EMAIL, SMS, PHONE, WHATSAPP
+  relatedPropertyId String?
+  createdAt       DateTime  @default(now())
+  
+  ownerProfile OwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  
+  @@index([ownerProfileId])
+  @@index([sentAt])
+  @@index([readAt])
 }
