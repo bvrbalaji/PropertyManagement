@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import reportsApi, { OutstandingDuesReport } from '@/lib/reportsApi';
 
 interface DuesData {
   tenantName: string;
@@ -45,13 +46,9 @@ export default function OutstandingDuesReport() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      params.append('sortBy', sortBy);
-      if (filterProperty !== 'ALL') params.append('property', filterProperty);
-
-      const response = await fetch(`/api/reports/outstanding-dues?${params}`);
-      const result = await response.json();
-      setData(result.data);
+      const propertyId = filterProperty !== 'ALL' ? filterProperty : undefined;
+      const reportData = await reportsApi.getOutstandingDues(sortBy, propertyId);
+      setData(reportData);
     } catch (error) {
       console.error('Error fetching report:', error);
       toast.error('Failed to load report data');

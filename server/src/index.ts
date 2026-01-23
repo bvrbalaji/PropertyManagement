@@ -14,6 +14,7 @@ import parkingRoutes from './routes/parking';
 import ownerRoutes from './routes/owner';
 import financesRoutes from './routes/finances';
 import notificationsRoutes from './routes/notifications';
+import reportsRoutes from './routes/reports';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/parking', parkingRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/finances', financesRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Error handling
 app.use(errorHandler);

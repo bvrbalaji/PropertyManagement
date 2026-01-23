@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import reportsApi, { MonthlyCollectionSummary } from '@/lib/reportsApi';
 
 interface CollectionData {
   month: string;
@@ -42,13 +43,11 @@ export default function MonthlyCollectionReport() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      const start = startDate ? new Date(startDate) : undefined;
+      const end = endDate ? new Date(endDate) : undefined;
 
-      const response = await fetch(`/api/reports/collection-summary?${params}`);
-      const result = await response.json();
-      setData(result.data);
+      const reportData = await reportsApi.getCollectionSummary(start, end);
+      setData(reportData);
     } catch (error) {
       console.error('Error fetching report:', error);
       toast.error('Failed to load report data');

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import reportsApi, { YearOverYearComparison } from '@/lib/reportsApi';
 
 interface YoyData {
   year: string;
@@ -42,12 +43,9 @@ export default function YearOverYearReport() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (selectedYear) params.append('year', selectedYear);
-
-      const response = await fetch(`/api/reports/yoy-comparison?${params}`);
-      const result = await response.json();
-      setData(result.data);
+      const year = selectedYear ? parseInt(selectedYear) : undefined;
+      const reportData = await reportsApi.getYearOverYearComparison(year);
+      setData(reportData);
     } catch (error) {
       console.error('Error fetching report:', error);
       toast.error('Failed to load report data');

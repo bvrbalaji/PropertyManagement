@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import reportsApi, { FinancialHealth } from '@/lib/reportsApi';
 
 interface ReportType {
   id: string;
@@ -59,15 +60,28 @@ const REPORT_TYPES: ReportType[] = [
 
 export default function ReportsHub() {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [health, setHealth] = useState<FinancialHealth | null>(null);
+
+  useEffect(() => {
+    loadFinancialHealth();
+  }, []);
+
+  const loadFinancialHealth = async () => {
+    try {
+      const healthData = await reportsApi.getFinancialHealth();
+      setHealth(healthData);
+    } catch (error) {
+      console.error('Error loading financial health:', error);
+      toast.error('Failed to load financial health status');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleReportSelect = (reportId: string) => {
     setSelectedReport(reportId);
-    setLoading(true);
     // Navigate to specific report
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
   };
 
   const getColorClasses = (color: string) => {

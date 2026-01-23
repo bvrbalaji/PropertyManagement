@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import reportsApi, { CashFlowStatement } from '@/lib/reportsApi';
 
 interface CashFlowData {
   month: string;
@@ -48,9 +49,8 @@ export default function CashFlowStatement() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/reports/cash-flow?months=${period}`);
-      const result = await response.json();
-      setData(result.data);
+      const reportData = await reportsApi.getCashFlow(parseInt(period));
+      setData(reportData);
     } catch (error) {
       console.error('Error fetching report:', error);
       toast.error('Failed to load report data');
