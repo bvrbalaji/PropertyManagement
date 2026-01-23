@@ -337,8 +337,7 @@ model TenantOnboarding {
   depositPaid           Float             @default(0)
   leaseAgreement        String?           // File path/URL
   leaseSignedAt         DateTime?
-  parkingSlotId         String?
-  inspectionChecklist   InspectionChecklist?
+  parkingSlotId         String? @unique
   onboardingCompletedAt DateTime?
   notificationSent      Boolean           @default(false)
   createdAt             DateTime          @default(now())
@@ -347,8 +346,12 @@ model TenantOnboarding {
   tenant User @relation("TenantOnboarding", fields: [tenantId], references: [id])
   apartment Apartment @relation("ApartmentOnboarding", fields: [apartmentId], references: [id])
   property Property @relation("PropertyOnboarding", fields: [propertyId], references: [id])
-  parkingSlot ParkingSlot? @relation(fields: [parkingSlotId], references: [id])
+  parkingSlot ParkingSlot? @relation("OnboardingToParkingSlot")
   documents OnboardingDocument[]
+  inspectionChecklist InspectionChecklist? @relation("OnboardingChecklist", fields: [inspectionChecklistId], references: [id], onDelete: SetNull)
+  inspectionChecklistId String?
+  inspection Inspection? @relation("OnboardingInspection")
+  offboarding TenantOffboarding? @relation("OffboardingToOnboarding")
   payments OnboardingPayment[]
   
   @@index([tenantId])
@@ -400,8 +403,8 @@ model InspectionChecklist {
   updatedAt         DateTime  @updatedAt
   
   property Property @relation(fields: [propertyId], references: [id])
-  onboardings TenantOnboarding[]
-  offboardings TenantOffboarding[]
+  onboardings TenantOnboarding[] @relation("OnboardingChecklist")
+  offboardings TenantOffboarding[] @relation("OffboardingChecklist")
   
   @@index([propertyId])
 }
@@ -434,8 +437,8 @@ model InspectionItem {
 
 model Inspection {
   id                String    @id @default(cuid())
-  onboardingId      String?
-  offboardingId     String?
+  onboardingId      String? @unique
+  offboardingId     String? @unique
   inspectionDate    DateTime
   inspectedBy       String
   photos            InspectionPhoto[]
@@ -444,8 +447,8 @@ model Inspection {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
-  onboarding TenantOnboarding? @relation(fields: [onboardingId], references: [id], onDelete: SetNull)
-  offboarding TenantOffboarding? @relation(fields: [offboardingId], references: [id], onDelete: SetNull)
+  onboarding TenantOnboarding? @relation("OnboardingInspection", fields: [onboardingId], references: [id], onDelete: SetNull)
+  offboarding TenantOffboarding? @relation("OffboardingInspection", fields: [offboardingId], references: [id], onDelete: SetNull)
   
   @@index([onboardingId])
   @@index([offboardingId])
@@ -472,14 +475,14 @@ model ParkingSlot {
   floor             String?
   vehicleType       VehicleType
   status            ParkingSlotStatus @default(AVAILABLE)
-  assignedToId      String?
+  assignedToId      String? @unique
   assignedAt        DateTime?
   releasedAt        DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   
   property Property @relation(fields: [propertyId], references: [id])
-  assignedTo TenantOnboarding? @relation(fields: [assignedToId], references: [id])
+  assignedTo TenantOnboarding? @relation("OnboardingToParkingSlot", fields: [assignedToId], references: [parkingSlotId])
   
   @@index([propertyId])
   @@index([status])
@@ -493,12 +496,10 @@ model TenantOffboarding {
   tenantId              String
   apartmentId           String
   propertyId            String
-  onboardingId          String
+  onboardingId          String @unique
   status                OffboardingStatus @default(REQUESTED)
   moveOutDate           DateTime?
   noticeDate            DateTime          @default(now())
-  inspectionChecklist   InspectionChecklist?
-  inspection            Inspection?
   finalSettlement       FinalSettlement?
   clearanceCertificate  String?           // File path/URL
   offboardingCompletedAt DateTime?
@@ -509,7 +510,10 @@ model TenantOffboarding {
   tenant User @relation("TenantOffboarding", fields: [tenantId], references: [id])
   apartment Apartment @relation("ApartmentOffboarding", fields: [apartmentId], references: [id])
   property Property @relation("PropertyOffboarding", fields: [propertyId], references: [id])
-  onboarding TenantOnboarding @relation(fields: [onboardingId], references: [id])
+  onboarding TenantOnboarding @relation("OffboardingToOnboarding", fields: [onboardingId], references: [id])
+  inspectionChecklist InspectionChecklist? @relation("OffboardingChecklist", fields: [inspectionChecklistId], references: [id], onDelete: SetNull)
+  inspectionChecklistId String?
+  inspection Inspection? @relation("OffboardingInspection")
   documents OffboardingDocument[]
   
   @@index([tenantId])
@@ -585,6 +589,8 @@ model OwnerProfile {
   coOwnerOf CoOwnerRelation[] @relation("CoOwnerProfile")
   transfers OwnershipTransfer[] @relation("InitiatedBy")
   transfersTo OwnershipTransfer[] @relation("TransferredTo")
+  financialData OwnerPropertyFinancial[] @relation("OwnerPropertyFinancial")
+  communications OwnerCommunication[] @relation("OwnerCommunication")
   
   @@index([userId])
   @@index([verificationStatus])
@@ -665,10 +671,10 @@ model OwnershipTransfer {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
-  initiatedByUser User @relation("TransferInitiatedBy", fields: [initiatedByUserId], references: [id])
-  transferredToUser User? @relation("TransferredTo", fields: [transferredToUserId], references: [id])
-  initiatorProfile OwnerProfile @relation("InitiatedBy", fields: [initiatedByUserId], references: [userId], onDelete: Cascade)
-  recipientProfile OwnerProfile? @relation("TransferredTo", fields: [transferredToUserId], references: [userId], onDelete: Cascade)
+  initiatedByUser User @relation("TransferInitiatedBy", fields: [initiatedByUserId], references: [id], map: "OwnershipTransfer_initiatedByUserId_fkey_user")
+  transferredToUser User? @relation("TransferredTo", fields: [transferredToUserId], references: [id], map: "OwnershipTransfer_transferredToUserId_fkey_user")
+  initiatorProfile OwnerProfile @relation("InitiatedBy", fields: [initiatedByUserId], references: [userId], onDelete: Cascade, map: "OwnershipTransfer_initiatedByUserId_fkey_profile")
+  recipientProfile OwnerProfile? @relation("TransferredTo", fields: [transferredToUserId], references: [userId], onDelete: Cascade, map: "OwnershipTransfer_transferredToUserId_fkey_profile")
   
   @@index([initiatedByUserId])
   @@index([transferredToUserId])
@@ -692,7 +698,7 @@ model OwnerPropertyFinancial {
   lastUpdated     DateTime  @updatedAt
   createdAt       DateTime  @default(now())
   
-  ownerProfile OwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  ownerProfile OwnerProfile @relation("OwnerPropertyFinancial", fields: [ownerProfileId], references: [id], onDelete: Cascade)
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   
   @@unique([ownerProfileId, propertyId])
@@ -712,7 +718,7 @@ model OwnerCommunication {
   relatedPropertyId String?
   createdAt       DateTime  @default(now())
   
-  ownerProfile OwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  ownerProfile OwnerProfile @relation("OwnerCommunication", fields: [ownerProfileId], references: [id], onDelete: Cascade)
   
   @@index([ownerProfileId])
   @@index([sentAt])
@@ -1139,6 +1145,8 @@ model NotificationTemplate {
   property          Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   createdByUser     User      @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   updatedByUser     User?     @relation("TemplateUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
+  notifications     Notification[] @relation("NotificationToTemplate")
+  schedules         NotificationSchedule[] @relation("NotificationScheduleToTemplate")
   
   @@index([propertyId])
   @@index([notificationType])
@@ -1237,7 +1245,7 @@ model Notification {
   updatedAt         DateTime  @updatedAt
   
   property          Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  template          NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  template          NotificationTemplate? @relation("NotificationToTemplate", fields: [templateId], references: [id], onDelete: SetNull)
   createdByUser     User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   deliveries        NotificationDelivery[]
   
@@ -1435,7 +1443,7 @@ model NotificationSchedule {
   updatedAt         DateTime  @updatedAt
   
   property          Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  template          NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  template          NotificationTemplate? @relation("NotificationScheduleToTemplate", fields: [templateId], references: [id], onDelete: SetNull)
   createdByUser     User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   
   @@index([propertyId])
