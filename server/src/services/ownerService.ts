@@ -3,7 +3,7 @@ import { OwnershipVerificationStatus, CommunicationPreference } from '@prisma/cl
 
 const prisma = new PrismaClient();
 
-export class OwnerService {
+class OwnerService {
   /**
    * Create owner profile for a user
    */
@@ -668,5 +668,4 @@ function calculateProfileCompleteness(data: any): number {
   return Math.round((filledFields / fields.length) * 100);
 }
 
-export { OwnerService };
 export default new OwnerService();

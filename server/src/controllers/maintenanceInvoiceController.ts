@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import maintenanceInvoiceService from '../services/maintenanceInvoiceService';
 import paymentReminderService from '../services/paymentReminderService';
-import { InvoiceStatus } from '@prisma/client';
 
 export class MaintenanceInvoiceController {
   /**

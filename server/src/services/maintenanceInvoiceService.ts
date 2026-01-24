@@ -1,6 +1,5 @@
 import prisma from '../config/database';
-import { Prisma } from '@prisma/client';
-import { InvoiceStatus } from '@prisma/client';
+import { Prisma, InvoiceStatus } from '@prisma/client';
 
 export interface CreateMaintenanceInvoiceDto {
   tenantId: string;
@@ -8,24 +7,20 @@ export interface CreateMaintenanceInvoiceDto {
   apartmentId: string;
   invoiceDate: Date;
   dueDate: Date;
-  water?: number;
-  electricity?: number;
-  security?: number;
-  cleaning?: number;
-  other?: number;
-  otherDescription?: string;
-  isCombinedWithRent?: boolean;
-  linkedRentInvoiceId?: string;
+  waterCharges?: number;
+  securityCharges?: number;
+  cleaningCharges?: number;
+  otherCharges?: number;
+  maintenanceAmount?: number;
   notes?: string;
 }
 
 export interface UpdateMaintenanceInvoiceDto {
-  water?: number;
-  electricity?: number;
-  security?: number;
-  cleaning?: number;
-  other?: number;
-  otherDescription?: string;
+  waterCharges?: number;
+  securityCharges?: number;
+  cleaningCharges?: number;
+  otherCharges?: number;
+  maintenanceAmount?: number;
   dueDate?: Date;
   status?: InvoiceStatus;
 }
@@ -47,12 +42,11 @@ export class MaintenanceInvoiceService {
   async createInvoice(data: CreateMaintenanceInvoiceDto) {
     try {
       // Calculate total maintenance amount
-      const totalAmount =
-        (data.water || 0) +
-        (data.electricity || 0) +
-        (data.security || 0) +
-        (data.cleaning || 0) +
-        (data.other || 0);
+      const totalAmount = (data.maintenanceAmount || 0) +
+        (data.waterCharges || 0) +
+        (data.securityCharges || 0) +
+        (data.cleaningCharges || 0) +
+        (data.otherCharges || 0);
 
       // Generate unique invoice number (format: MAINT-YYYY-MM-XXXXX)
       const yearMonth = data.invoiceDate.toISOString().slice(0, 7).replace('-', '');
@@ -67,24 +61,17 @@ export class MaintenanceInvoiceService {
           apartmentId: data.apartmentId,
           invoiceDate: data.invoiceDate,
           dueDate: data.dueDate,
-          water: data.water || 0,
-          electricity: data.electricity || 0,
-          security: data.security || 0,
-          cleaning: data.cleaning || 0,
-          other: data.other || 0,
-          otherDescription: data.otherDescription,
+          maintenanceAmount: data.maintenanceAmount || 0,
+          waterCharges: data.waterCharges || 0,
+          securityCharges: data.securityCharges || 0,
+          cleaningCharges: data.cleaningCharges || 0,
+          otherCharges: data.otherCharges || 0,
           totalAmount,
           paidAmount: 0,
-          remainingAmount: totalAmount,
-          isCombinedWithRent: data.isCombinedWithRent || false,
-          linkedRentInvoiceId: data.linkedRentInvoiceId,
-          status: InvoiceStatus.DRAFT,
+          balanceAmount: totalAmount,
+          status: InvoiceStatus.SENT,
           isOverdue: false,
-          lateFeeApplied: 0,
           notes: data.notes,
-          lastReminderSent: null,
-          dueReminder: false,
-          overdueReminder: false,
         },
         include: {
           tenant: true,
@@ -194,7 +181,6 @@ export class MaintenanceInvoiceService {
    */
   async updateInvoice(invoiceId: string, data: UpdateMaintenanceInvoiceDto) {
     try {
-      // Calculate new total if any charges are updated
       const invoice = await prisma.maintenanceInvoice.findUnique({
         where: { id: invoiceId },
       });
@@ -204,21 +190,20 @@ export class MaintenanceInvoiceService {
       }
 
       const newTotal =
-        (data.water !== undefined ? data.water : invoice.water) +
-        (data.electricity !== undefined ? data.electricity : invoice.electricity) +
-        (data.security !== undefined ? data.security : invoice.security) +
-        (data.cleaning !== undefined ? data.cleaning : invoice.cleaning) +
-        (data.other !== undefined ? data.other : invoice.other);
+        (data.maintenanceAmount !== undefined ? data.maintenanceAmount : invoice.maintenanceAmount) +
+        (data.waterCharges !== undefined ? data.waterCharges : invoice.waterCharges) +
+        (data.securityCharges !== undefined ? data.securityCharges : invoice.securityCharges) +
+        (data.cleaningCharges !== undefined ? data.cleaningCharges : invoice.cleaningCharges) +
+        (data.otherCharges !== undefined ? data.otherCharges : invoice.otherCharges);
 
       const updated = await prisma.maintenanceInvoice.update({
         where: { id: invoiceId },
         data: {
-          water: data.water,
-          electricity: data.electricity,
-          security: data.security,
-          cleaning: data.cleaning,
-          other: data.other,
-          otherDescription: data.otherDescription,
+          maintenanceAmount: data.maintenanceAmount,
+          waterCharges: data.waterCharges,
+          securityCharges: data.securityCharges,
+          cleaningCharges: data.cleaningCharges,
+          otherCharges: data.otherCharges,
           totalAmount: newTotal,
           dueDate: data.dueDate,
           status: data.status,
@@ -258,7 +243,8 @@ export class MaintenanceInvoiceService {
         where: { id: invoiceId },
         data: {
           status: InvoiceStatus.SENT,
-          sentDate: new Date(),
+          dueReminder: false,
+          overdueReminder: false,
         },
       });
 
@@ -274,51 +260,6 @@ export class MaintenanceInvoiceService {
   }
 
   /**
-   * Mark invoice as viewed
-   */
-  async markAsViewed(invoiceId: string) {
-    try {
-      const invoice = await prisma.maintenanceInvoice.update({
-        where: { id: invoiceId },
-        data: {
-          status: InvoiceStatus.VIEWED,
-          viewedAt: new Date(),
-        },
-      });
-
-      return { success: true, data: invoice };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to mark as viewed',
-      };
-    }
-  }
-
-  /**
-   * Cancel invoice
-   */
-  async cancelInvoice(invoiceId: string, reason?: string) {
-    try {
-      const invoice = await prisma.maintenanceInvoice.update({
-        where: { id: invoiceId },
-        data: {
-          status: InvoiceStatus.CANCELLED,
-          cancelledAt: new Date(),
-          cancelledReason: reason,
-        },
-      });
-
-      return { success: true, data: invoice };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to cancel invoice',
-      };
-    }
-  }
-
-  /**
    * Check and update overdue status
    */
   async checkAndUpdateOverdueStatus() {
@@ -329,9 +270,7 @@ export class MaintenanceInvoiceService {
       const overdueInvoices = await prisma.maintenanceInvoice.findMany({
         where: {
           dueDate: { lt: now },
-          status: {
-            in: [InvoiceStatus.SENT, InvoiceStatus.VIEWED, InvoiceStatus.PARTIALLY_PAID],
-          },
+          status: { in: [InvoiceStatus.SENT] },
           isOverdue: false,
         },
       });
@@ -340,11 +279,11 @@ export class MaintenanceInvoiceService {
       if (overdueInvoices.length > 0) {
         await prisma.maintenanceInvoice.updateMany({
           where: {
-            id: { in: overdueInvoices.map((i) => i.id) },
+            id: { in: overdueInvoices.map((i: any) => i.id) },
           },
           data: {
             isOverdue: true,
-            status: InvoiceStatus.OVERDUE,
+            status: InvoiceStatus.SENT,
           },
         });
       }
@@ -371,7 +310,6 @@ export class MaintenanceInvoiceService {
         _sum: {
           totalAmount: true,
           paidAmount: true,
-          lateFeeApplied: true,
         },
         _count: {
           id: true,
@@ -385,27 +323,14 @@ export class MaintenanceInvoiceService {
         _sum: { totalAmount: true },
       });
 
-      const byChargeType = await prisma.maintenanceInvoice.aggregate({
-        where: { propertyId },
-        _sum: {
-          water: true,
-          electricity: true,
-          security: true,
-          cleaning: true,
-          other: true,
-        },
-      });
-
       return {
         success: true,
         data: {
-          totalInvoices: summary._count.id,
-          totalAmount: summary._sum.totalAmount || 0,
-          totalPaid: summary._sum.paidAmount || 0,
-          totalLateFees: summary._sum.lateFeeApplied || 0,
+          totalInvoices: summary._count?.id || 0,
+          totalAmount: summary._sum?.totalAmount || 0,
+          totalPaid: summary._sum?.paidAmount || 0,
           pendingAmount:
-            (summary._sum.totalAmount || 0) - (summary._sum.paidAmount || 0),
-          byChargeType,
+            (summary._sum?.totalAmount || 0) - (summary._sum?.paidAmount || 0),
           byStatus,
         },
       };
@@ -443,21 +368,21 @@ export class MaintenanceInvoiceService {
       const invoices = [];
       const invoiceDate = new Date(month.getFullYear(), month.getMonth(), 1);
       const dueDate = new Date(invoiceDate);
-      dueDate.setDate(dueDate.getDate() + 5); // Default 5 days grace period
+      dueDate.setDate(dueDate.getDate() + 5); // Default 5 days due
 
       for (const config of maintenanceConfigs) {
         for (const assignment of config.apartment?.tenantAssignments || []) {
           const result = await this.createInvoice({
             tenantId: assignment.tenant.id,
             propertyId,
-            apartmentId: config.apartmentId,
+            apartmentId: config.apartmentId || '',
             invoiceDate,
             dueDate,
-            water: config.fixedAmount || 0,
-            electricity: 0,
-            security: 0,
-            cleaning: 0,
-            other: 0,
+            maintenanceAmount: config.maintenanceAmount,
+            waterCharges: config.waterCharges || 0,
+            securityCharges: config.securityCharges || 0,
+            cleaningCharges: config.cleaningCharges || 0,
+            otherCharges: config.otherCharges || 0,
           });
 
           if (result.success) {

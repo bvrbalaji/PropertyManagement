@@ -55,10 +55,9 @@ export class RentInvoiceService {
           notes: data.notes,
           status: InvoiceStatus.DRAFT,
           paidAmount: 0,
-          remainingAmount: data.rentAmount,
+          totalAmount: data.rentAmount,
+          balanceAmount: data.rentAmount,
           isOverdue: false,
-          lateFeeApplied: 0,
-          lastReminderSent: null,
           dueReminder: false,
           overdueReminder: false,
         },
@@ -245,7 +244,6 @@ export class RentInvoiceService {
         where: { id: invoiceId },
         data: {
           status: InvoiceStatus.SENT,
-          sentDate: new Date(),
         },
       });
 
@@ -270,7 +268,6 @@ export class RentInvoiceService {
         where: { id: invoiceId },
         data: {
           status: InvoiceStatus.VIEWED,
-          viewedAt: new Date(),
         },
       });
 
@@ -292,8 +289,6 @@ export class RentInvoiceService {
         where: { id: invoiceId },
         data: {
           status: InvoiceStatus.CANCELLED,
-          cancelledAt: new Date(),
-          cancelledReason: reason,
         },
       });
 
@@ -420,7 +415,7 @@ export class RentInvoiceService {
       const dueDate = new Date(
         month.getFullYear(),
         month.getMonth(),
-        1 + (rentConfigs[0]?.gracePeriodDays || 5),
+        1 + (rentConfigs[0]?.gracePeriod || 5),
       );
 
       for (const config of rentConfigs) {
@@ -428,7 +423,7 @@ export class RentInvoiceService {
           const result = await this.createInvoice({
             tenantId: assignment.tenant.id,
             propertyId,
-            apartmentId: config.apartmentId,
+            apartmentId: config.apartmentId || '',
             rentAmount: config.rentAmount,
             invoiceDate,
             dueDate,

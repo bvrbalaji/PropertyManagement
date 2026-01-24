@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getUserRole } from '@/lib/auth';
 import Cookies from 'js-cookie';
 
@@ -13,27 +13,87 @@ export default function Header() {
   const [userName, setUserName] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const role = getUserRole();
-    const token = Cookies.get('accessToken');
-    
-    if (token && role) {
-      setUserRole(role);
-      setIsLoggedIn(true);
-      const userDataStr = localStorage.getItem('userData');
-      if (userDataStr) {
+  // Check auth status
+  const checkAuth = useCallback(() => {
+    try {
+      const token = Cookies.get('accessToken');
+      const role = getUserRole();
+      
+      console.log('[Header] Checking auth - token:', !!token, 'role:', role);
+      
+      if (token) {
+        setIsLoggedIn(true);
+        if (role) {
+          setUserRole(role as UserRole);
+        }
+        
+        // Get user name from localStorage
         try {
-          const userData = JSON.parse(userDataStr);
-          setUserName(userData.fullName || userData.email || 'User');
+          const userDataStr = localStorage.getItem('userData');
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            const displayName = userData.fullName || userData.email || userData.name || 'User';
+            setUserName(displayName);
+            console.log('[Header] User name set to:', displayName);
+          } else {
+            setUserName('User');
+            console.log('[Header] No userData in localStorage, using default');
+          }
         } catch (e) {
+          console.error('[Header] Error parsing userData:', e);
           setUserName('User');
         }
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+        setUserName('');
+        console.log('[Header] Not authenticated - clearing state');
       }
+    } catch (error) {
+      console.error('[Header] Auth check error:', error);
     }
   }, []);
+
+  // Mount effect
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Check auth when mounted or pathname changes
+  useEffect(() => {
+    if (mounted) {
+      checkAuth();
+    }
+  }, [mounted, pathname, checkAuth]);
+
+  // Listen for storage changes (when userData is updated)
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      console.log('[Header] Storage event detected:', e.key);
+      if (e.key === 'userData' || e.key === null) {
+        checkAuth();
+      }
+    };
+
+    const handleLoginEvent = () => {
+      console.log('[Header] Login event detected');
+      checkAuth();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userLoggedIn', handleLoginEvent);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userLoggedIn', handleLoginEvent);
+    };
+  }, [mounted, checkAuth]);
 
   const handleLogout = async () => {
     try {
@@ -49,14 +109,16 @@ export default function Header() {
       localStorage.removeItem('userData');
       setIsLoggedIn(false);
       setUserRole(null);
+      setUserName('');
+      setIsOpen(false);
       router.push('/login');
     }
   };
 
   const navLinks = [
     { label: 'Home', href: '/', show: true },
-    { label: 'Dashboard', href: getDefaultDashboard(userRole), show: isLoggedIn },
-    { label: 'Reports', href: '/reports', show: isLoggedIn && ['ADMIN', 'FLAT_OWNER'].includes(userRole!) },
+    { label: 'Dashboard', href: getDefaultDashboard(userRole), show: isLoggedIn && userRole !== null },
+    { label: 'Reports', href: '/reports', show: isLoggedIn && userRole !== null && ['ADMIN', 'FLAT_OWNER'].includes(userRole) },
     { label: 'Notifications', href: '/notifications', show: isLoggedIn },
   ];
 
@@ -79,6 +141,22 @@ export default function Header() {
 
   if (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/verify-otp') {
     return null;
+  }
+
+  // Only render interactive content after client hydration
+  if (!mounted) {
+    return (
+      <nav className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center gap-2 font-bold text-xl text-gray-900">
+              <span className="text-2xl">🏢</span>
+              <span>PropertyMgt</span>
+            </Link>
+          </div>
+        </div>
+      </nav>
+    );
   }
 
   return (

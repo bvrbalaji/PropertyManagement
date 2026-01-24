@@ -49,3 +49,5 @@ server/prisma/migrations/
 # Logs
 logs
 *.log
+
+dist/

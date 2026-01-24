@@ -42,7 +42,17 @@ export default function LoginPage() {
       }
 
       if (result.user) {
+        // Store user data in localStorage for the Header component
+        localStorage.setItem('userData', JSON.stringify(result.user));
+        
+        // Dispatch custom event to notify Header of login
+        window.dispatchEvent(new Event('userLoggedIn'));
+        
         toast.success('Login successful!');
+        
+        // Add a small delay to ensure cookies are set before navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Redirect based on role
         const role = result.user.role;
         router.push(`/dashboard/${role.toLowerCase().replace('_', '-')}`);
