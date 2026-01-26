@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authService } from '@/lib/auth';
 import toast from 'react-hot-toast';
+import Cookies from 'js-cookie';
 
 const loginSchema = z.object({
   emailOrPhone: z.string().min(1, 'Email or phone is required'),
@@ -37,27 +38,35 @@ export default function LoginPage() {
 
       if (result.requiresMFA) {
         setRequiresMFA(true);
-        toast.info('MFA code required');
+        toast.loading('MFA code required');
         return;
       }
 
       if (result.user) {
-        // Store user data in localStorage for the Header component
-        localStorage.setItem('userData', JSON.stringify(result.user));
+        console.log('[Login] Login successful, user:', result.user.email);
+        
+        // Store user data in Cookies for the Header component
+        Cookies.set('userData', JSON.stringify(result.user));
+        Cookies.set('accessToken', result.accessToken);
+        Cookies.set('refreshToken', result.refreshToken);
+        console.log('[Login] userData stored in Cookies');
         
         // Dispatch custom event to notify Header of login
         window.dispatchEvent(new Event('userLoggedIn'));
+        console.log('[Login] userLoggedIn event dispatched');
         
         toast.success('Login successful!');
         
-        // Add a small delay to ensure cookies are set before navigation
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Add delay to ensure cookies are set and events are processed
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Redirect based on role
         const role = result.user.role;
+        console.log('[Login] Redirecting to dashboard:', role);
         router.push(`/dashboard/${role.toLowerCase().replace('_', '-')}`);
       }
     } catch (error: any) {
+      console.error('[Login] Error:', error);
       toast.error(error.response?.data?.error?.message || 'Login failed');
     } finally {
       setIsLoading(false);

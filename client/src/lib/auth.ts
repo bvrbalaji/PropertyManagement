@@ -16,6 +16,9 @@ export const authService = {
       if (response.data.data.user?.role) {
         Cookies.set('userRole', response.data.data.user.role, { expires: 1 });
       }
+      if (response.data.data.user) {
+        Cookies.set('userData', JSON.stringify(response.data.data.user), { expires: 1 });
+      }
     }
     // Return in the format the login page expects
     return {
@@ -35,6 +38,7 @@ export const authService = {
     await api.post('/auth/logout');
     Cookies.remove('accessToken');
     Cookies.remove('refreshToken');
+    Cookies.remove('userRole');
   },
 
   forgotPassword: async (emailOrPhone: string) => {
@@ -55,6 +59,7 @@ export const authService = {
 
 export const getUserRole = (): UserRole | null => {
   if (typeof window === 'undefined') return null;
+
   const role = Cookies.get('userRole');
   return role as UserRole | null;
 };

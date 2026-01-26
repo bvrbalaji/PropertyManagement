@@ -20,5 +20,9 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "nodemon": "^3.1.11",
+    "nodewatch": "^0.3.2"
   }
 }

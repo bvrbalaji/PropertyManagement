@@ -28,7 +28,7 @@ export default function Home() {
     if (token && role) {
       setUserRole(role);
       setIsLoggedIn(true);
-      const userDataStr = localStorage.getItem('userData');
+      const userDataStr = Cookies.get('userData');
       if (userDataStr) {
         try {
           const userData = JSON.parse(userDataStr);

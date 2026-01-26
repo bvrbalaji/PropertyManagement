@@ -20,10 +20,10 @@ export default function Header() {
   // Check auth status
   const checkAuth = useCallback(() => {
     try {
-      const token = Cookies.get('accessToken');
+      const token =  Cookies.get('accessToken');
       const role = getUserRole();
       
-      console.log('[Header] Checking auth - token:', !!token, 'role:', role);
+      console.log('[Header] Checking auth - token:', !!token, 'role:', role, 'time:', new Date().toISOString());
       
       if (token) {
         setIsLoggedIn(true);
@@ -31,17 +31,20 @@ export default function Header() {
           setUserRole(role as UserRole);
         }
         
-        // Get user name from localStorage
+        // Get user name from Cookies
         try {
-          const userDataStr = localStorage.getItem('userData');
+          const userDataStr = Cookies.get('userData');
           if (userDataStr) {
             const userData = JSON.parse(userDataStr);
             const displayName = userData.fullName || userData.email || userData.name || 'User';
             setUserName(displayName);
+            setUserRole(role as UserRole);
+            setMounted(true);
+            setIsLoggedIn(true);
             console.log('[Header] User name set to:', displayName);
           } else {
             setUserName('User');
-            console.log('[Header] No userData in localStorage, using default');
+            console.log('[Header] No userData in Cookies, using default');
           }
         } catch (e) {
           console.error('[Header] Error parsing userData:', e);
@@ -58,42 +61,107 @@ export default function Header() {
     }
   }, []);
 
-  // Mount effect
+  // Mount effect - set mounted immediately
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Check auth when mounted or pathname changes
-  useEffect(() => {
-    if (mounted) {
-      checkAuth();
-    }
-  }, [mounted, pathname, checkAuth]);
-
-  // Listen for storage changes (when userData is updated)
-  useEffect(() => {
-    if (!mounted) return;
-
-    const handleStorageChange = (e: StorageEvent) => {
-      console.log('[Header] Storage event detected:', e.key);
-      if (e.key === 'userData' || e.key === null) {
-        checkAuth();
+    // Immediately check auth when component mounts
+   try {
+      const token =  Cookies.get('accessToken');
+      const role = getUserRole();
+      
+      console.log('[Header] Checking auth - token:', !!token, 'role:', role, 'time:', new Date().toISOString());
+      
+      if (token) {
+        setIsLoggedIn(true);
+        if (role) {
+          setUserRole(role as UserRole);
+        }
+        
+        // Get user name from Cookies
+        try {
+          const userDataStr = Cookies.get('userData');
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            const displayName = userData.fullName || userData.email || userData.name || 'User';
+            setUserName(displayName);
+            setUserRole(role as UserRole);
+            setMounted(true);
+            setIsLoggedIn(true);
+            console.log('[Header] User name set to:', displayName);
+          } else {
+            setUserName('User');
+            console.log('[Header] No userData in Cookies, using default');
+          }
+        } catch (e) {
+          console.error('[Header] Error parsing userData:', e);
+          setUserName('User');
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+        setUserName('');
+        console.log('[Header] Not authenticated - clearing state');
       }
-    };
-
-    const handleLoginEvent = () => {
-      console.log('[Header] Login event detected');
-      checkAuth();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('userLoggedIn', handleLoginEvent);
+    } catch (error) {
+      console.error('[Header] Auth check error:', error);
+    }
     
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('userLoggedIn', handleLoginEvent);
-    };
-  }, [mounted, checkAuth]);
+    setMounted(true);
+    // Check auth again after mount
+    checkAuth();
+  }, [checkAuth]);
+
+  // // Check auth when pathname changes (route navigation)
+  // useEffect(() => {
+  //   if (mounted) {
+  //     checkAuth();
+  //   }
+  // }, [pathname]);
+
+  // Listen for storage changes and custom events
+  // useEffect(() => {
+  //   if (!mounted) return;
+
+  //   const handleStorageChange = (e: StorageEvent) => {
+  //     console.log('[Header] Storage event detected:', e.key);
+  //     if (e.key === 'userData' || e.key === null) {
+  //       // Small delay to ensure all storage operations are complete
+  //       setTimeout(() => checkAuth(), 10);
+  //     }
+  //   };
+
+  //   const handleLoginEvent = () => {
+  //     console.log('[Header] Login event detected');
+  //     // Use setTimeout to ensure Cookies is updated
+  //     setTimeout(() => checkAuth(), 50);
+  //   };
+
+  //   const handleVisibilityChange = () => {
+  //     if (document.visibilityState === 'visible') {
+  //       console.log('[Header] Page became visible, checking auth');
+  //       checkAuth();
+  //     }
+  //   };
+
+  //   window.addEventListener('storage', handleStorageChange);
+  //   window.addEventListener('userLoggedIn', handleLoginEvent);
+  //   document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+  //   return () => {
+  //     window.removeEventListener('storage', handleStorageChange);
+  //     window.removeEventListener('userLoggedIn', handleLoginEvent);
+  //     document.removeEventListener('visibilitychange', handleVisibilityChange);
+  //   };
+  // }, [mounted, checkAuth]);
+
+
+  // Watch for userData in Cookies and immediately sync
+  // useEffect(() => {
+  //   const userData = Cookies.getItem('userData');
+  //   if (userData && !isLoggedIn) {
+  //     console.log('[Header] userData detected in Cookies, syncing...');
+  //     checkAuth();
+  //   }
+  // }, [isLoggedIn, checkAuth]);
 
   const handleLogout = async () => {
     try {
@@ -106,7 +174,7 @@ export default function Header() {
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
       Cookies.remove('userRole');
-      localStorage.removeItem('userData');
+      console.log('[Header] Logged out, cleared storage');
       setIsLoggedIn(false);
       setUserRole(null);
       setUserName('');
