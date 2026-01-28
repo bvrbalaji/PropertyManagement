@@ -28,6 +28,8 @@ api.interceptors.response.use(
       // Handle token refresh or redirect to login
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
+      Cookies.remove('userRole');
+      Cookies.remove('userData');
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }

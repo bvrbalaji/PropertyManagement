@@ -79,6 +79,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
+    console.log(req.body);
     const { emailOrPhone, password, mfaCode } = req.body;
 
     // Find user
@@ -126,19 +127,46 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Update last login
     await updateLastLogin(user.id);
 
-    // Set cookies
+    // Set cookies - httpOnly removed to allow client-side JavaScript access
+    // Note: This is less secure but necessary for client-side auth state management
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
+      httpOnly: false, // Changed from true to allow client-side access
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/'
     });
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
+      httpOnly: false, // Changed from true to allow client-side access
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    // Set userRole and userData cookies for client-side access
+    res.cookie('userRole', user.role, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/'
+    });
+
+    res.cookie('userData', JSON.stringify({
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      fullName: user.fullName,
+      role: user.role,
+      mfaEnabled: user.mfaEnabled,
+    }), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/'
     });
 
     res.json({
@@ -192,8 +220,11 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
       await deleteSession(token);
     }
 
+    // Clear all auth cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
+    res.clearCookie('userRole');
+    res.clearCookie('userData');
 
     res.json({
       success: true,
@@ -246,10 +277,11 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     });
 
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
+      httpOnly: false, // Changed from true to allow client-side access
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 15 * 60 * 1000,
+      path: '/'
     });
 
     res.json({

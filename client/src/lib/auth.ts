@@ -11,13 +11,15 @@ export const authService = {
   login: async (data: LoginRequest) => {
     const response = await api.post<AuthResponse>('/auth/login', data);
     if (response.data.data?.accessToken) {
-      Cookies.set('accessToken', response.data.data.accessToken, { expires: 1 });
-      Cookies.set('refreshToken', response.data.data.refreshToken, { expires: 7 });
+      const cookieOptions = { path: '/', sameSite: 'lax' as const, expires: 1 };
+
+      Cookies.set('accessToken', response.data.data.accessToken, cookieOptions);
+      Cookies.set('refreshToken', response.data.data.refreshToken, { ...cookieOptions, expires: 7 });
       if (response.data.data.user?.role) {
-        Cookies.set('userRole', response.data.data.user.role, { expires: 1 });
+        Cookies.set('userRole', response.data.data.user.role, cookieOptions);
       }
       if (response.data.data.user) {
-        Cookies.set('userData', JSON.stringify(response.data.data.user), { expires: 1 });
+        Cookies.set('userData', JSON.stringify(response.data.data.user), cookieOptions);
       }
     }
     // Return in the format the login page expects
@@ -39,6 +41,7 @@ export const authService = {
     Cookies.remove('accessToken');
     Cookies.remove('refreshToken');
     Cookies.remove('userRole');
+    Cookies.remove('userData');
   },
 
   forgotPassword: async (emailOrPhone: string) => {

@@ -31,6 +31,22 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  // Helper function to map roles to their correct dashboard routes
+  const getRoleDashboardRoute = (role: string): string => {
+    switch (role) {
+      case 'ADMIN':
+        return '/dashboard/admin';
+      case 'FLAT_OWNER':
+        return '/dashboard/flat-owner';
+      case 'TENANT':
+        return '/dashboard/tenant';
+      case 'MAINTENANCE_STAFF':
+        return '/dashboard/maintenance';
+      default:
+        return '/dashboard';
+    }
+  };
+
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
@@ -43,27 +59,40 @@ export default function LoginPage() {
       }
 
       if (result.user) {
-        console.log('[Login] Login successful, user:', result.user.email);
-        
+        console.log('[Login] ===== LOGIN SUCCESSFUL =====');
+        console.log('[Login] User:', result.user.email, 'Role:', result.user.role);
+
         // Store user data in Cookies for the Header component
-        Cookies.set('userData', JSON.stringify(result.user));
-        Cookies.set('accessToken', result.accessToken);
-        Cookies.set('refreshToken', result.refreshToken);
-        console.log('[Login] userData stored in Cookies');
-        
+        // Use explicit options to ensure cookies are readable
+        const cookieOptions = { path: '/', sameSite: 'lax' as const, expires: 1 };
+
+        Cookies.set('userData', JSON.stringify(result.user), cookieOptions);
+        Cookies.set('accessToken', result.accessToken, cookieOptions);
+        Cookies.set('refreshToken', result.refreshToken, { ...cookieOptions, expires: 7 });
+        Cookies.set('userRole', result.user.role, cookieOptions);
+
+        console.log('[Login] ✓ Cookies set with options:', cookieOptions);
+        console.log('[Login]   - accessToken:', !!Cookies.get('accessToken'));
+        console.log('[Login]   - refreshToken:', !!Cookies.get('refreshToken'));
+        console.log('[Login]   - userData:', !!Cookies.get('userData'));
+        console.log('[Login]   - userRole:', Cookies.get('userRole'));
+
         // Dispatch custom event to notify Header of login
+        console.log('[Login] \u2605 Dispatching userLoggedIn event...');
         window.dispatchEvent(new Event('userLoggedIn'));
-        console.log('[Login] userLoggedIn event dispatched');
-        
+        console.log('[Login] \u2713 Event dispatched');
+
         toast.success('Login successful!');
-        
+
         // Add delay to ensure cookies are set and events are processed
         await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Redirect based on role
+
+        // Redirect based on role using explicit mapping
         const role = result.user.role;
-        console.log('[Login] Redirecting to dashboard:', role);
-        router.push(`/dashboard/${role.toLowerCase().replace('_', '-')}`);
+        const dashboardRoute = getRoleDashboardRoute(role);
+        console.log('[Login] Redirecting:', role, '->', dashboardRoute);
+        console.log('[Login] ===== END LOGIN =====');
+        router.push(dashboardRoute);
       }
     } catch (error: any) {
       console.error('[Login] Error:', error);

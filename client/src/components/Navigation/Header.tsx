@@ -20,62 +20,69 @@ export default function Header() {
   // Check auth status
   const checkAuth = useCallback(() => {
     try {
-      const token =  Cookies.get('accessToken');
+      const token = Cookies.get('accessToken');
       const role = getUserRole();
-      
-      console.log('[Header] Checking auth - token:', !!token, 'role:', role, 'time:', new Date().toISOString());
-      
+      const userDataStr = Cookies.get('userData');
+
+      console.log('[Header] ===== CHECK AUTH =====');
+      console.log('[Header] All cookies:', document.cookie); // Show ALL cookies
+      console.log('[Header] Token exists:', !!token, '| Value length:', token?.length || 0);
+      console.log('[Header] Role:', role);
+      console.log('[Header] UserData cookie:', !!userDataStr);
+      // console.log('[Header] Current isLoggedIn state:', isLoggedIn); // Removed to avoid circular dependency
+      // console.log('[Header] Current userName:', userName); // Removed to avoid circular dependency
+
       if (token) {
+        console.log('[Header] ✓ Token found, setting logged in state');
         setIsLoggedIn(true);
+
         if (role) {
           setUserRole(role as UserRole);
+          console.log('[Header] ✓ Role set:', role);
         }
-        
+
         // Get user name from Cookies
         try {
-          const userDataStr = Cookies.get('userData');
           if (userDataStr) {
             const userData = JSON.parse(userDataStr);
             const displayName = userData.fullName || userData.email || userData.name || 'User';
             setUserName(displayName);
-            setUserRole(role as UserRole);
-            setMounted(true);
-            setIsLoggedIn(true);
-            console.log('[Header] User name set to:', displayName);
+            console.log('[Header] ✓ User name set to:', displayName);
           } else {
             setUserName('User');
-            console.log('[Header] No userData in Cookies, using default');
+            console.log('[Header] ⚠ No userData cookie, using default name');
           }
         } catch (e) {
-          console.error('[Header] Error parsing userData:', e);
+          console.error('[Header] ✗ Error parsing userData:', e);
           setUserName('User');
         }
       } else {
+        console.log('[Header] ✗ No token found, clearing auth state');
         setIsLoggedIn(false);
         setUserRole(null);
         setUserName('');
-        console.log('[Header] Not authenticated - clearing state');
       }
+      console.log('[Header] ===== END CHECK AUTH =====');
     } catch (error) {
-      console.error('[Header] Auth check error:', error);
+      console.error('[Header] ✗ Auth check error:', error);
     }
-  }, []);
+  }, []); // FIXED: Empty dependency array - don't depend on state we're updating!
 
   // Mount effect - set mounted immediately
   useEffect(() => {
     // Immediately check auth when component mounts
-   try {
-      const token =  Cookies.get('accessToken');
+    try {
+      const token = Cookies.get('accessToken');
       const role = getUserRole();
-      
+
       console.log('[Header] Checking auth - token:', !!token, 'role:', role, 'time:', new Date().toISOString());
-      
+
       if (token) {
         setIsLoggedIn(true);
         if (role) {
           setUserRole(role as UserRole);
         }
-        
+
         // Get user name from Cookies
         try {
           const userDataStr = Cookies.get('userData');
@@ -104,54 +111,57 @@ export default function Header() {
     } catch (error) {
       console.error('[Header] Auth check error:', error);
     }
-    
+
     setMounted(true);
     // Check auth again after mount
     checkAuth();
   }, [checkAuth]);
 
-  // // Check auth when pathname changes (route navigation)
-  // useEffect(() => {
-  //   if (mounted) {
-  //     checkAuth();
-  //   }
-  // }, [pathname]);
+  // Check auth when pathname changes (route navigation)
+  useEffect(() => {
+    if (mounted) {
+      checkAuth();
+    }
+  }, [pathname, mounted, checkAuth]);
 
   // Listen for storage changes and custom events
-  // useEffect(() => {
-  //   if (!mounted) return;
+  useEffect(() => {
+    if (!mounted) return;
 
-  //   const handleStorageChange = (e: StorageEvent) => {
-  //     console.log('[Header] Storage event detected:', e.key);
-  //     if (e.key === 'userData' || e.key === null) {
-  //       // Small delay to ensure all storage operations are complete
-  //       setTimeout(() => checkAuth(), 10);
-  //     }
-  //   };
+    const handleStorageChange = (e: StorageEvent) => {
+      console.log('[Header] Storage event detected:', e.key);
+      if (e.key === 'userData' || e.key === null) {
+        // Small delay to ensure all storage operations are complete
+        setTimeout(() => checkAuth(), 10);
+      }
+    };
 
-  //   const handleLoginEvent = () => {
-  //     console.log('[Header] Login event detected');
-  //     // Use setTimeout to ensure Cookies is updated
-  //     setTimeout(() => checkAuth(), 50);
-  //   };
+    const handleLoginEvent = () => {
+      console.log('[Header] ★★★ USER LOGGED IN EVENT DETECTED ★★★');
+      // Use setTimeout to ensure Cookies is updated
+      setTimeout(() => {
+        console.log('[Header] Running checkAuth after login event...');
+        checkAuth();
+      }, 100);
+    };
 
-  //   const handleVisibilityChange = () => {
-  //     if (document.visibilityState === 'visible') {
-  //       console.log('[Header] Page became visible, checking auth');
-  //       checkAuth();
-  //     }
-  //   };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Header] Page became visible, checking auth');
+        checkAuth();
+      }
+    };
 
-  //   window.addEventListener('storage', handleStorageChange);
-  //   window.addEventListener('userLoggedIn', handleLoginEvent);
-  //   document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-  //   return () => {
-  //     window.removeEventListener('storage', handleStorageChange);
-  //     window.removeEventListener('userLoggedIn', handleLoginEvent);
-  //     document.removeEventListener('visibilitychange', handleVisibilityChange);
-  //   };
-  // }, [mounted, checkAuth]);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userLoggedIn', handleLoginEvent);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userLoggedIn', handleLoginEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [mounted, checkAuth]);
 
 
   // Watch for userData in Cookies and immediately sync
@@ -170,10 +180,11 @@ export default function Header() {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear all auth data
+      // Clear all auth cookies
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
       Cookies.remove('userRole');
+      Cookies.remove('userData');
       console.log('[Header] Logged out, cleared storage');
       setIsLoggedIn(false);
       setUserRole(null);
@@ -186,6 +197,7 @@ export default function Header() {
   const navLinks = [
     { label: 'Home', href: '/', show: true },
     { label: 'Dashboard', href: getDefaultDashboard(userRole), show: isLoggedIn && userRole !== null },
+    { label: 'Finances', href: '/dashboard/finances', show: isLoggedIn && userRole !== null && ['ADMIN', 'FLAT_OWNER', 'TENANT'].includes(userRole) },
     { label: 'Reports', href: '/reports', show: isLoggedIn && userRole !== null && ['ADMIN', 'FLAT_OWNER'].includes(userRole) },
     { label: 'Notifications', href: '/notifications', show: isLoggedIn },
   ];
@@ -244,11 +256,10 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`font-medium transition-colors ${
-                    isActive(link.href)
-                      ? 'text-blue-600'
-                      : 'text-gray-700 hover:text-blue-600'
-                  }`}
+                  className={`font-medium transition-colors ${isActive(link.href)
+                    ? 'text-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
+                    }`}
                 >
                   {link.label}
                 </Link>
@@ -311,11 +322,10 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    isActive(link.href)
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${isActive(link.href)
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                    }`}
                   onClick={() => setIsOpen(false)}
                 >
                   {link.label}
